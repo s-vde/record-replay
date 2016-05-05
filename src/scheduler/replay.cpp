@@ -1,5 +1,6 @@
 
 #include <fstream>
+#include <sys/stat.h>
 #include "replay.hpp"
 #include "container_output.hpp"
 #include "program.hpp"
@@ -24,6 +25,7 @@ namespace scheduler
     
     void write_settings(const SchedulerSettings& settings)
     {
+		system("test -d schedules || mkdir schedules");
         std::ofstream ofs("schedules/settings.txt");
         ofs << settings;
         ofs.close();
@@ -31,6 +33,7 @@ namespace scheduler
     
     void write_schedules(const Program& B, const schedule_t& S)
     {
+		system("test -d schedules || mkdir schedules");
         std::ofstream ofs("schedules/threads.txt");
         ofs << B.nr_threads();
         ofs.close();
