@@ -1,0 +1,25 @@
+.PHONY:
+
+#===== Makefile.replay =======================================================80
+#
+#                                   Scheduler
+#
+# author: 	Susanne van den Elsen
+# date: 	2015
+#
+# This file is to be included by the Makefile of projects using the public
+# interface of Scheduler.
+#
+#===============================================================================
+
+#======Variables =============================================================80
+#
+# User defined:
+#
+# Defined here:
+#	scheduler_srcs_public   : The directory of Scheduler source files for the
+#                             "public interface" of Scheduler.
+#
+#===============================================================================
+
+scheduler_srcs_replay	    := program.cpp scheduler_settings.cpp replay.cpp

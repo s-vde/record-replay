@@ -1,0 +1,15 @@
+
+#===== Makefile.llvm =========================================================80
+#
+#                            Record-Replay/LLVM-Pass
+#
+# author: 	Susanne van den Elsen
+# date: 	2015
+#
+#===============================================================================
+
+LEVEL           = ../../..
+LIBRARYNAME     = record-replay
+LOADABLE_MODULE = 1
+
+include $(LEVEL)/Makefile.common
