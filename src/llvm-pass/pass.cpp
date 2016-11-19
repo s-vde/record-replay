@@ -158,10 +158,10 @@ namespace record_replay
       std::pair<bool,VisibleInstruction> visible_on;
       for (auto instr = llvm::inst_begin(F); instr != llvm::inst_end(F); ++instr)
       {
-         visible_on = is_visible(&*instr);
-         if (visible_on.first)
+         const auto& visible_instr = get_visible(&*instr);
+         if (visible_instr)
          {
-            wrap_visible_instruction(M, &*instr, visible_on.second);
+            wrap_visible_instruction(M, &*instr, *visible_instr);
          }
          else if (isa_thread_end(F, &*instr))
          {

@@ -3,6 +3,9 @@
 // LLVM
 #include "llvm/IR/Module.h"
 
+// BOOST
+#include <boost/optional.hpp>
+
 // STL
 #include <vector>
 
@@ -87,10 +90,10 @@ namespace instrumentation_utils
    
    //-------------------------------------------------------------------------------------
 	
-   std::string get_mangled_name(const llvm::Module& M,
-                                const std::string& namespc,
-                                const std::string& class_name,
-                                const std::string& name);
+   boost::optional<std::string> get_mangled_name(const llvm::Module& M,
+                                                 const std::string& namespc,
+                                                 const std::string& class_name,
+                                                 const std::string& name);
    
    //-------------------------------------------------------------------------------------
     

@@ -3,6 +3,9 @@
 // PROGRAM_MODEL
 #include "object.hpp"
 
+// BOOST
+#include <boost/optional.hpp>
+
 // LLVM
 #include "llvm/IR/Module.h"
 
@@ -61,14 +64,14 @@ namespace record_replay
    
    //-------------------------------------------------------------------------------------
     
-   std::pair<bool,VisibleInstruction> is_visible(llvm::Instruction* I);
+   boost::optional<VisibleInstruction> get_visible(llvm::Instruction* I);
     
-   std::pair<bool,VisibleInstruction> is_visible(const Op& op, llvm::Value* operand);
+   boost::optional<VisibleInstruction> get_visible(const Op& op, llvm::Value* operand);
     
-   std::pair<bool,VisibleInstruction> is_visible(const Op& op,
-                                                 llvm::Value* ptrop,
-                                                 llvm::Value* indexop1,
-                                                 llvm::Value* indexop2);
+   boost::optional<VisibleInstruction> get_visible(const Op& op,
+                                                   llvm::Value* ptrop,
+                                                   llvm::Value* indexop1,
+                                                   llvm::Value* indexop2);
    
    //-------------------------------------------------------------------------------------
     

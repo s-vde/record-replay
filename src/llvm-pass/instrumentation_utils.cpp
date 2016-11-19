@@ -161,10 +161,10 @@ namespace instrumentation_utils
    
    //-------------------------------------------------------------------------------------
 	
-   std::string get_mangled_name(const llvm::Module& M,
-                                const std::string& namespc,
-                                const std::string& class_name,
-                                const std::string& name)
+   boost::optional<std::string> get_mangled_name(const llvm::Module& M,
+                                                 const std::string& namespc,
+                                                 const std::string& class_name,
+                                                 const std::string& name)
    {
       std::size_t pos = 0;
       for (auto fun = M.getFunctionList().begin(); fun != M.getFunctionList().end(); ++fun)
@@ -178,12 +178,12 @@ namespace instrumentation_utils
                if ((pos = mangled.find(name, pos)) != std::string::npos)
                {
                   PRINT(name << " found with mangled name " << mangled << "\n");
-                  return mangled;
+                  return boost::make_optional(mangled);
                }
             }
          }
       }
-      return "";
+      return boost::optional<std::string>();
    }
    
    //-------------------------------------------------------------------------------------

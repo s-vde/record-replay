@@ -42,7 +42,7 @@ namespace record_replay
       if (mSucceeded)
       {
          mSucceeded =
-            instrumentation_utils::get_mangled_name(M, "program_model", "", "llvm_object").size() > 0 &&
+            instrumentation_utils::get_mangled_name(M, "program_model", "", "llvm_object") &&
             M.getTypeByName("class.scheduler::Scheduler") != nullptr &&
             M.getTypeByName("class.program_model::Object") != nullptr;
       }
@@ -119,14 +119,14 @@ namespace record_replay
 	
    void Functions::register_wrapper(const llvm::Module& M, const std::string& name)
    {
-      const std::string mangled =
-         instrumentation_utils::get_mangled_name(M, "scheduler", "Scheduler", name);
-      if (mangled.size() > 0)
+      using instrumentation_utils::get_mangled_name;
+      auto mangled = get_mangled_name(M, "scheduler", "Scheduler", name);
+      if (mangled)
       {
          mWrappers.insert(FunctionMap::value_type(
-            name, llvm::cast<llvm::Function>(M.getFunction(mangled))
+            name, llvm::cast<llvm::Function>(M.getFunction(*mangled))
          ));
-         mBlackListed.insert(mangled);
+         mBlackListed.insert(*mangled);
 		}
       else
       {
