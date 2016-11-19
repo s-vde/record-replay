@@ -1,113 +1,145 @@
+#pragma once
 
-#ifndef TRANSITION_HPP_INCLUDED
-#define TRANSITION_HPP_INCLUDED
-
-#include <vector>
+// PROGRAM_MODEL
 #include "instruction.hpp"
 
-/*---------------------------------------------------------------------------75*/
-/**
- @file transition.hpp
- @brief Definition of class template Transition<State>.
- @author Susanne van den Elsen
- @date 2015
- */
-/*---------------------------------------------------------------------------++*/
+// STL
+#include <vector>
+
+//--------------------------------------------------------------------------------------90
+/// @file transition.hpp
+/// @author Susanne van den Elsen
+/// @date 2015
+//----------------------------------------------------------------------------------------
 
 namespace program_model
 {
-    template<typename State>
-    class Transition
-    {
-    public:
-        
-        // TYPES
-        
-        using StatePtr = typename State::SharedPtr;
-        
-        // CTORS / DTOR
-        
-        Transition(
-            const int index,
-            StatePtr pre,
-            const Instruction& instr,
-            StatePtr post)
-        : mIndex(index)
-        , mPre(pre)
-        , mInstr(instr)
-        , mPost(post) { }
-        
-        Transition(const Transition&) = default;
-        Transition(Transition&&) = default;
-        ~Transition() = default;
-        
-        // OPERATORS
-        
-        Transition& operator=(const Transition&) = default;
-        Transition& operator=(Transition&&) = default;
-        
-        //
-        
-        int index() const
-        {
-            return mIndex;
-        }
-        
-        const Instruction& instr() const
-        {
-            return mInstr;
-        }
-        
-        StatePtr pre_ptr()
-        {
-            return mPre;
-        }
-        
-        const State& pre() const
-        {
-            return *mPre;
-        }
-        
-        State& pre()
-        {
-            return *mPre;
-        }
-        
-        StatePtr post_ptr()
-        {
-            return mPost;
-        }
-        
-        const State& post() const
-        {
-            return *mPost;
-        }
-        
-        State& post()
-        {
-            return *mPost;
-        }
-        
-        void set_pre(const StatePtr& pre)
-        {
-            mPre = pre;
-        }
-        
-        void set_post(const StatePtr& post)
-        {
-            mPost = post;
-        }
-        
-    private:
-        
-        // DATA MEMBERS
-        
-        int mIndex;
-        StatePtr mPre;
-        const Instruction mInstr;
-        StatePtr mPost;
-        
-    }; // end class template Transition<State>
-} // end namespace program_model
+   //-------------------------------------------------------------------------------------
+   
+   template<typename State>
+   class Transition
+   {
+   public:
 
-#endif
+      //----------------------------------------------------------------------------------
+      
+      using StatePtr = typename State::SharedPtr;
+        
+      //----------------------------------------------------------------------------------
+      
+      /// @brief Constructor
+      
+      Transition(const int index, StatePtr pre, const Instruction& instr, StatePtr post)
+      : mIndex(index)
+      , mPre(pre)
+      , mInstr(instr)
+      , mPost(post) { }
+      
+      //----------------------------------------------------------------------------------
+      
+      /// @brief Getter.
+      
+      int index() const
+      {
+         return mIndex;
+      }
+      
+      //----------------------------------------------------------------------------------
+      
+      /// @brief Getter.
+      
+      const Instruction& instr() const
+      {
+         return mInstr;
+      }
+      
+      //----------------------------------------------------------------------------------
+      
+      /// @brief Getter.
+      
+      StatePtr pre_ptr()
+      {
+         return mPre;
+      }
+      
+      //----------------------------------------------------------------------------------
+      
+      /// @brief Getter.
+      
+      const State& pre() const
+      {
+         return *mPre;
+      }
+      
+      //----------------------------------------------------------------------------------
+      
+      /// @brief Getter.
+      
+      State& pre()
+      {
+         return *mPre;
+      }
+      
+      //----------------------------------------------------------------------------------
+      
+      /// @brief Getter.
+      
+      StatePtr post_ptr()
+      {
+         return mPost;
+      }
+      
+      //----------------------------------------------------------------------------------
+      
+      /// @brief Getter.
+      
+      const State& post() const
+      {
+         return *mPost;
+      }
+      
+      //----------------------------------------------------------------------------------
+      
+      /// @brief Getter.
+      
+      State& post()
+      {
+         return *mPost;
+      }
+      
+      //----------------------------------------------------------------------------------
+      
+      /// @brief Setter.
+        
+      void set_pre(const StatePtr& pre)
+      {
+         mPre = pre;
+      }
+      
+      //----------------------------------------------------------------------------------
+      
+      /// @brief Setter.
+        
+      void set_post(const StatePtr& post)
+      {
+         mPost = post;
+      }
+      
+      //----------------------------------------------------------------------------------
+        
+   private:
+        
+      //----------------------------------------------------------------------------------
+        
+      int mIndex;
+      StatePtr mPre;
+      const Instruction mInstr;
+      StatePtr mPost;
+      
+      //----------------------------------------------------------------------------------
+        
+   }; // end class template Transition<State>
+   
+   //-------------------------------------------------------------------------------------
+   
+} // end namespace program_model

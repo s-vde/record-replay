@@ -1,64 +1,79 @@
+#pragma once
 
-#ifndef INSTRUCTION_HPP_INCLUDED
-#define INSTRUCTION_HPP_INCLUDED
-
+// PROGRAM_MODEL
 #include "object.hpp"
 #include "thread.hpp"
 
-/*---------------------------------------------------------------------------75*/
-/**
- @file instruction.hpp
- @brief Definition of class Instruction.
- @author Susanne van den Elsen
- @date 2015
- */
-/*---------------------------------------------------------------------------++*/
+//--------------------------------------------------------------------------------------90
+/// @file instruction.hpp
+/// @author Susanne van den Elsen
+/// @date 2015
+//----------------------------------------------------------------------------------------
 
 namespace program_model
 {
-    class Instruction
-    {
-    public:
+   //-------------------------------------------------------------------------------------
+   
+   class Instruction
+   {
+   public:
+      
+      //----------------------------------------------------------------------------------
+      
+      /// @brief Constructor.
+      
+      Instruction(const Thread::tid_t tid, const Object::Op&, const Object&);
+      
+      //----------------------------------------------------------------------------------
+      
+      /// @brief Default constructor.
+      
+      Instruction();
+      
+      //----------------------------------------------------------------------------------
         
-        // CTORS / DTOR
+      bool operator==(const Instruction&) const;
+      
+      //----------------------------------------------------------------------------------
         
-        Instruction(const Thread::tid_t tid, const Object::Op&, const Object&);
+      /// @brief Getter.
+      
+      Thread::tid_t tid() const;
+
+      //----------------------------------------------------------------------------------
+      
+      /// @brief Getter.
+      
+      const Object::Op& op() const;
+      
+      //----------------------------------------------------------------------------------
+      
+      /// @brief Getter.
+      
+      const Object& obj() const;
+      
+      //----------------------------------------------------------------------------------
         
-        Instruction();
+   private:
         
-        Instruction(const Instruction&) = default;
-        Instruction(Instruction&&) = default;
-        ~Instruction() = default;
+      //----------------------------------------------------------------------------------
+      
+      Thread::tid_t mTid;
+      Object::Op mOp;
+      Object mObj;
+      
+      //----------------------------------------------------------------------------------
+      
+      friend std::istream& operator>>(std::istream&, Instruction&);
+      
+      //----------------------------------------------------------------------------------
         
-        // OPERATORS
-        
-        Instruction& operator=(const Instruction&) = default;
-        Instruction& operator=(Instruction&&) = default;
-        
-        bool operator==(const Instruction&) const;
-        
-        //
-        
-        Thread::tid_t tid() const;
-        const Object::Op& op() const;
-        const Object& obj() const;
-        
-    private:
-        
-        // DATA MEMBERS
-        
-        Thread::tid_t mTid;
-        Object::Op mOp;
-        Object mObj;
-        
-    //friendly:
-        
-        friend std::istream& operator>>(std::istream&, Instruction&);
-        
-    }; // end class Instruction
+   }; // end class Instruction
+   
+   //-------------------------------------------------------------------------------------
     
-    bool is_lock_access(const Instruction&);
+   bool is_lock_access(const Instruction&);
+   
+   //-------------------------------------------------------------------------------------
 
 } // end namespace program_model
-
-#endif

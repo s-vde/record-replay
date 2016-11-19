@@ -1,17 +1,14 @@
+#pragma once
 
-#ifndef PRINT_HPP_INCLUDED
-#define PRINT_HPP_INCLUDED
-
+// LLVM
 #include "llvm/Support/raw_ostream.h"
 
-/*---------------------------------------------------------------------------75*/
-/**
- @file print.hpp
- @brief Print macros using llvm::errs.
- @author Susanne van den Elsen
- @date 2015
- */
-/*---------------------------------------------------------------------------++*/
+//--------------------------------------------------------------------------------------90
+/// @file print.hpp
+/// @brief Print macros using llvm::errs.
+/// @author Susanne van den Elsen
+/// @date 2015
+//----------------------------------------------------------------------------------------
 
 #define _PRINT
 #ifdef _PRINT
@@ -20,6 +17,4 @@
 #else
 #   define PRINT(x) do { } while (false)
 #   define PRINTF(class, method, args, other) do { } while (false)
-#endif
-
 #endif

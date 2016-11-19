@@ -1,69 +1,71 @@
 
-#ifndef OBJECT_HPP_INCLUDED
-#define OBJECT_HPP_INCLUDED
+#pragma once
 
+// STL
 #include <string>
 
-/*---------------------------------------------------------------------------75*/
-/**
- @file object.hpp
- @brief Definition of class Object.
- @author Susanne van den Elsen
- @date 2015
- */
-/*---------------------------------------------------------------------------++*/
+//--------------------------------------------------------------------------------------90
+/// @file object.hpp
+/// @author Susanne van den Elsen
+/// @date 2015
+//----------------------------------------------------------------------------------------
 
 namespace program_model
 {
-    class Object
-    {
-    public:
+   //-------------------------------------------------------------------------------------
+   
+   class Object
+   {
+   public:
+      
+      //----------------------------------------------------------------------------------
+      
+      enum class Op { READ = 0, WRITE = 1, LOCK = 2, UNLOCK = 3 };
+      
+      //----------------------------------------------------------------------------------
         
-        enum class Op {
-            READ = 0,
-            WRITE = 1,
-            LOCK = 2,
-            UNLOCK = 3
-        };
+      /// @brief Constructor.
+      /// @note Default arguments construct dummy Object.
+      
+      explicit Object(std::string gvar="", const int index=0);
+      
+      //----------------------------------------------------------------------------------
         
-        // CTORS / DTOR
+      bool operator==(const Object&) const;
         
-        /**
-         @note Default arguments construct dummy Object.
-         */
-        explicit Object(std::string gvar="", const int index=0);
+      //----------------------------------------------------------------------------------
+      
+      /// @brief Getter.
+      
+      const std::string& var() const;
+      
+      //----------------------------------------------------------------------------------
+      
+      /// @brief Getter.
+      
+      int index() const;
+      
+      //----------------------------------------------------------------------------------
         
-        Object(const Object&) = default;
-        Object(Object&&) = default;
-        ~Object() = default;
+   private:
         
-        // OPERATORS
+      //----------------------------------------------------------------------------------
+      
+      std::string mVar;
+      int mIndex;
+      
+      //----------------------------------------------------------------------------------
         
-        Object& operator=(const Object&) = default;
-        Object& operator=(Object&&) = default;
+      friend std::istream& operator>>(std::istream&, Object&);
+      
+      //----------------------------------------------------------------------------------
         
-        bool operator==(const Object&) const;
-        
-        //
-        
-        const std::string& var() const;
-        int index() const;
-        
-    private:
-        
-        // DATA MEMBERS
-        
-        std::string mVar;
-        int mIndex;
-        
-    //friendly:
-        
-        friend std::istream& operator>>(std::istream&, Object&);
-        
-    }; // end class Object
+   }; // end class Object
+   
+   //-------------------------------------------------------------------------------------
 	
 	Object llvm_object(const char* gvar, const int index=0);
+   
+   //-------------------------------------------------------------------------------------
 	
 } // end namespace program_model
-
-#endif

@@ -1,59 +1,60 @@
+#pragma once
 
-#ifndef SCHEDULER_SETTINGS_HPP_INCLUDED
-#define SCHEDULER_SETTINGS_HPP_INCLUDED
-
+// STL
 #include <string>
 
-/*---------------------------------------------------------------------------75*/
-/**
- @file scheduler_settings.hpp
- @brief Definition of class SchedulerSettings.
- @author Susanne van den Elsen
- @date 2015
- */
-/*---------------------------------------------------------------------------++*/
+//--------------------------------------------------------------------------------------90
+/// @file scheduler_settings.hpp
+/// @brief Definition of class SchedulerSettings.
+/// @author Susanne van den Elsen
+/// @date 2015
+//----------------------------------------------------------------------------------------
 
 namespace scheduler
 {
-    class SchedulerSettings
-    {
-    public:
+   //-------------------------------------------------------------------------------------
+   
+   class SchedulerSettings
+   {
+   public:
+      
+      //----------------------------------------------------------------------------------
         
-        // CTORS / DTOR
+      /// @brief Constructor.
+      
+      explicit SchedulerSettings(const std::string& strategy_tag="Random");
+      
+      //----------------------------------------------------------------------------------
         
-        explicit SchedulerSettings(const std::string& strategy_tag="Random");
+      /// @brief Getter.
+      
+      const std::string& strategy_tag() const;
+      
+      //----------------------------------------------------------------------------------
         
-        SchedulerSettings(const SchedulerSettings&) = default;
-        SchedulerSettings(SchedulerSettings&&) = default;
-        ~SchedulerSettings() = default;
+      /// @note Function to initialize SchedulerSettings object in the initializer list of
+      /// Scheduler.
+
+      static SchedulerSettings read_from_file(const std::string& filename);
+      
+      //----------------------------------------------------------------------------------
         
-        // OPERATORS
+   private:
         
-        SchedulerSettings& operator=(const SchedulerSettings&) = default;
-        SchedulerSettings& operator=(SchedulerSettings&&) = default;
+      //----------------------------------------------------------------------------------
+      
+      /// @brief The tag corresponding to the SelectionStrategy to be used by the Scheduler.
+
+      std::string mStrategyTag;
+      
+      //----------------------------------------------------------------------------------
         
-        //
-        
-        const std::string& strategy_tag() const;
-        
-        /**
-         @note Function to initialize SchedulerSettings object in the
-         initializer list of Scheduler.
-         */
-        static SchedulerSettings read_from_file(const std::string& filename);
-        
-    private:
-        
-        /**
-         @brief The tag corresponding to the SelectionStrategy to be 
-         used by the Scheduler.
-         */
-        std::string mStrategyTag;
-        
-    }; // end class SchedulerSettings
-    
-    std::ostream& operator<<(std::ostream&, const SchedulerSettings&);
+   }; // end class SchedulerSettings
+   
+   //-------------------------------------------------------------------------------------
+   
+   std::ostream& operator<<(std::ostream&, const SchedulerSettings&);
+   
+   //-------------------------------------------------------------------------------------
     
 } // end namespace scheduler
-
-#endif

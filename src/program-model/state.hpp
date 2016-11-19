@@ -1,82 +1,104 @@
+#pragma once
 
-#ifndef STATE_HPP_INCLUDED
-#define STATE_HPP_INCLUDED
-
-#include <unordered_map>
+// PROGRAM_MODEL
 #include "instruction.hpp"
 
-/*---------------------------------------------------------------------------75*/
-/**
- @file state.hpp
- @brief Definition of class State and struct next_t and type alias NextSet.
- @author Susanne van den Elsen
- @date 2015
- */
-/*---------------------------------------------------------------------------++*/
+// STL
+#include <unordered_map>
+
+//--------------------------------------------------------------------------------------90
+/// @file state.hpp
+/// @author Susanne van den Elsen
+/// @date 2015
+//----------------------------------------------------------------------------------------
 
 namespace program_model
 {
-    struct next_t
-    {
-        Instruction instr;
-        bool enabled;
-        
-    }; // end struct next_t
+   //-------------------------------------------------------------------------------------
+   
+   struct next_t
+   {
+      Instruction instr;
+      bool enabled;
+   };
+   
+   //-------------------------------------------------------------------------------------
     
-    using NextSet = std::unordered_map<Thread::tid_t,next_t>;
-    
-    class State
-    {
-    public:
+   using NextSet = std::unordered_map<Thread::tid_t,next_t>;
+   
+   //-------------------------------------------------------------------------------------
+   
+   class State
+   {
+   public:
+      
+      //----------------------------------------------------------------------------------
+      
+      using SharedPtr = std::shared_ptr<State>;
+      
+      //----------------------------------------------------------------------------------
         
-        // TYPES
-        
-        using SharedPtr = std::shared_ptr<State>;
-        
-        // CTORS / DTOR
-        
-        State(const Tids& enabled, const NextSet& next);
-        
-        State(const State&) = default;
-        State(State&&) = default;
-        ~State() = default;
-        
-        // OPERATORS
-        
-        State& operator=(const State&) = default;
-        State& operator=(State&&) = default;
+      /// @brief Constructor.
+      
+      State(const Tids& enabled, const NextSet& next);
+      
+      //----------------------------------------------------------------------------------
 
-        //
+      /// @brief Getter.
+      
+      std::string tag() const;
+      
+      //----------------------------------------------------------------------------------
+      
+      /// @brief Getter.
+      
+      const Tids& enabled() const;
+      
+      //----------------------------------------------------------------------------------
+      
+      /// @brief Getter.
+      
+      bool is_enabled(const Thread::tid_t& tid) const;
+      
+      //----------------------------------------------------------------------------------
         
-        std::string tag() const;
-        
-        const Tids& enabled() const;
-		bool is_enabled(const Thread::tid_t& tid) const;
-        
-        const NextSet::const_iterator next(const Thread::tid_t& tid) const;
-        NextSet::const_iterator next_cbegin() const;
-        NextSet::const_iterator next_cend() const;
-		bool has_next(const Thread::tid_t& tid) const;
+      const NextSet::const_iterator next(const Thread::tid_t& tid) const;
+      
+      //----------------------------------------------------------------------------------
+      
+      NextSet::const_iterator next_cbegin() const;
+      
+      //----------------------------------------------------------------------------------
+      
+      NextSet::const_iterator next_cend() const;
+      
+      //----------------------------------------------------------------------------------
+      
+      bool has_next(const Thread::tid_t& tid) const;
+      
+      //----------------------------------------------------------------------------------
 
-    private:
+   private:
+      
+      //----------------------------------------------------------------------------------
+      
+      static const std::string mTag;
         
-        // DATA MEMBERS
+      Tids mEnabled;
         
-        static const std::string mTag;
-        
-        Tids mEnabled;
-        
-        /**
-         @brief <code>{(next_{this}(p),enabled(this,p)) | p in Tids }</code>.
-         */
-        NextSet mNext;
+      /// @brief @brief <code>{(next_{this}(p),enabled(this,p)) | p in Tids }</code>.
+      
+      NextSet mNext;
     
-    //friendly:
+      //----------------------------------------------------------------------------------
         
-        friend std::ostream& operator<<(std::ostream&, const State&);
-        friend std::istream& operator>>(std::istream&, State&);
+      friend std::ostream& operator<<(std::ostream&, const State&);
+      friend std::istream& operator>>(std::istream&, State&);
+      
+      //----------------------------------------------------------------------------------
         
-    }; // end class State
+   }; // end class State
+   
+   //-------------------------------------------------------------------------------------
+   
 } // end namespace program_model
-
-#endif
