@@ -12,6 +12,7 @@
 #include "utils_map.hpp"
 
 // STL
+#include <algorithm>
 #include <assert.h>
 #include <iostream>
 
@@ -294,29 +295,26 @@ namespace scheduler
    
    //-------------------------------------------------------------------------------------
 
-   // #todo More efficient implementation using some additional bookkeeping.
    bool TaskPool::all_enabled_collected() const
    {
-      return std::find_if(mThreads.begin(), mThreads.end(),
-                          [this] (const auto& entry)
-                          {
-                             return
-                                 entry.second.status() == Thread::Status::ENABLED &&
-                                 mTasks.find(entry.first) == mTasks.end();
-                          }
-      ) == mThreads.end();
+      return std::all_of(mThreads.begin(), mThreads.end(),
+                         [this] (const auto& thread)
+                         {
+                            return
+                              thread.second.status() != Thread::Status::ENABLED ||
+                              mTasks.find(thread.first) != mTasks.end();
+                         });
    }
    
    //-------------------------------------------------------------------------------------
-
+   
    bool TaskPool::all_finished() const
    {
-      return std::find_if(mThreads.begin(), mThreads.end(),
-                          [] (const auto& entry)
-                          {
-                             return entry.second.status() != Thread::Status::FINISHED;
-                          }
-      ) == mThreads.end();
+      return std::all_of(mThreads.begin(), mThreads.end(),
+                         [] (const auto& thread)
+                         {
+                            return thread.second.status() != Thread::Status::FINISHED;
+                         });
    }
    
    //-------------------------------------------------------------------------------------

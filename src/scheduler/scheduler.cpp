@@ -94,20 +94,24 @@ namespace scheduler
     
    void Scheduler::yield()
    {
-      if (!runs_controlled()) { return; }
-      const Thread::tid_t tid = find_tid(pthread_self());
-      DEBUGFNL(thread_str(tid), "yield", "", "");
-      mPool.yield(tid);
+      if (runs_controlled())
+      {
+         const Thread::tid_t tid = find_tid(pthread_self());
+         DEBUGFNL(thread_str(tid), "yield", "", "");
+         mPool.yield(tid);
+      }
    }
    
    //-------------------------------------------------------------------------------------
 
    void Scheduler::finish()
    {
-      if (!runs_controlled()) { return; }
-      const Thread::tid_t tid = find_tid(pthread_self());
-      DEBUGFNL(thread_str(tid), "finish", "", "");
-      mPool.set_status_protected(tid, Thread::Status::FINISHED);
+      if (runs_controlled())
+      {
+         const Thread::tid_t tid = find_tid(pthread_self());
+         DEBUGFNL(thread_str(tid), "finish", "", "");
+         mPool.set_status_protected(tid, Thread::Status::FINISHED);
+      }
    }
    
    //-------------------------------------------------------------------------------------
@@ -219,7 +223,8 @@ namespace scheduler
          }
          else
          {
-            set_status(selection.first); break;
+            set_status(selection.first);
+            break;
          }
          mPool.wait_enabled_collected();
       }
@@ -284,7 +289,8 @@ namespace scheduler
       try
       {
          E.last().set_post(mPool.program_state());
-      } catch(const std::out_of_range& e)
+      }
+      catch(const std::out_of_range& e)
       {
          ERROR("Scheduler::close", e.what());
       }

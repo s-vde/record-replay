@@ -10,6 +10,7 @@
 #include "color_output.hpp"
 
 // LLVM
+#include "llvm/IR/InstIterator.h"
 #include "llvm/IR/IRBuilder.h"
 
 namespace record_replay
@@ -155,23 +156,20 @@ namespace record_replay
    {
       PRINTF("\n\t" << outputname(), "instrument_function", F->getName(), "\n");
       std::pair<bool,VisibleInstruction> visible_on;
-      for (auto& BB : *F)
+      for (auto instr = llvm::inst_begin(F); instr != llvm::inst_end(F); ++instr)
       {
-         for (auto& I : BB)
+         visible_on = is_visible(&*instr);
+         if (visible_on.first)
          {
-            visible_on = is_visible(&I);
-            if (visible_on.first)
-            {
-               wrap_visible_instruction(M, &I, visible_on.second);
-            }
-            else if (isa_thread_end(F, &I))
-            {
-               add_thread_finished(M, I);
-            }
-            else
-            {
-               check_to_be_instrumented(&I, F->getName(), ToInstrument, Done);
-            }
+            wrap_visible_instruction(M, &*instr, visible_on.second);
+         }
+         else if (isa_thread_end(F, &*instr))
+         {
+            add_thread_finished(M, *instr);
+         }
+         else
+         {
+            check_to_be_instrumented(&*instr, F->getName(), ToInstrument, Done);
          }
       }
    }

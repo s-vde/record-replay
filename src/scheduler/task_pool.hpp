@@ -38,7 +38,7 @@ namespace scheduler
 
       using Tasks = std::unordered_map<Thread::tid_t,Instruction>;
       using Threads = std::unordered_map<Thread::tid_t,Thread>;
-       using LockObs = std::unordered_map<std::string,LockObject>;
+      using LockObs = std::unordered_map<std::string,LockObject>;
       
       //----------------------------------------------------------------------------------
         

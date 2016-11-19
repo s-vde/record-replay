@@ -28,8 +28,7 @@ namespace scheduler
    {
       std::string strategy_tag = "Random";
       std::ifstream ifs(filename);
-      if (ifs >> strategy_tag) {}
-      else
+      if (!(ifs >> strategy_tag))
       {
          ERROR("SchedulerSettings", "reading settings from " << filename);
       }
