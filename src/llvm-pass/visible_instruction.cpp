@@ -5,104 +5,91 @@
 #include "instrumentation_utils.hpp"
 #include "print.hpp"
 
+// PROGRAM_MODEL
+#include "object_io.hpp"
+
 // UTILS
 #include "color_output.hpp"
 
 // LLVM
 #include "llvm/IR/IRBuilder.h"
 
+// STL
+#include <algorithm>
+
 namespace record_replay
 {
    //-------------------------------------------------------------------------------------
    
-   VisibleInstruction::VisibleInstruction(const Op& op,
-                                          llvm::GlobalVariable* var,
-                                          llvm::Value* index)
-   : mOp(op)
-   , mGVar(var)
-   , mIndex(index)
+   shared_object::shared_object(llvm::GlobalVariable* gvar, const indices_t& indices)
+   : m_gvar(gvar)
+   , m_indices(indices) { }
+   
+   //-------------------------------------------------------------------------------------
+   
+   llvm::Value* integer(llvm::Module& module, llvm::Instruction* before, llvm::Value* value)
    {
+      using namespace llvm;
+      Type* int32_type = IntegerType::getInt32Ty(module.getContext());
+      if (ConstantInt* const_int = dyn_cast<ConstantInt>(value))
+      {
+         return AddrSpaceCastInst::CreateIntegerCast(const_int, int32_type, false, "", before);
+      }
+      else if (llvm::SExtInst* sext_inst = llvm::dyn_cast<llvm::SExtInst>(value))
+      {
+         return sext_inst->getOperand(0);
+      }
+      using namespace utils::io;
+      PRINT(text_color("unhandled index case\n", Color::RED));
    }
    
    //-------------------------------------------------------------------------------------
-    
-   const Op& VisibleInstruction::op() const
-   {
-      return mOp;
-   }
    
-   //-------------------------------------------------------------------------------------
-    
-   llvm::Value* VisibleInstruction::object(llvm::Module& M, llvm::Instruction* I) const
+   llvm::Value* shared_object::construct_model(llvm::Module& module, llvm::Instruction* before) const
    {
       using namespace utils::io;
-      PRINTF("\t" << text_color("\t\tVisibleInstruction", Color::YELLOW), "object", "", "\n");
-      
-      llvm::Value* index = nullptr;
-      if (mIndex != nullptr)
-      {
-         if (llvm::ConstantInt* cint = llvm::dyn_cast<llvm::ConstantInt>(mIndex))
-         {
-            index = llvm::AddrSpaceCastInst::CreateIntegerCast(
-               cint,
-               llvm::IntegerType::getInt32Ty(M.getContext()),
-               false,
-               "",
-               I
-            );
-         }
-         else if (llvm::SExtInst* sext = llvm::dyn_cast<llvm::SExtInst>(mIndex))
-         {
-            index = sext->getOperand(0);
-         }
-         else
-         {
-            PRINT("UNHANDLED index case\n");
-         }
-		}
-      else
-      {
-         index = llvm::ConstantInt::get(M.getContext(), llvm::APInt(32, llvm::StringRef("0"), 10));
-      }
-      llvm::AllocaInst* obj = new llvm::AllocaInst(
-         M.getTypeByName("class.program_model::Object"),
-         "obj",
-         I
-      );
+      PRINT(text_color("shared_object::construct_model()", Color::YELLOW) << "\n");
       
       using instrumentation_utils::get_mangled_name;
-      const auto mangled_name = get_mangled_name(M, "program_model", "", "llvm_object");
+      const static auto mangled_name = get_mangled_name(module, "program_model", "", "llvm_object");
       if (mangled_name)
       {
-         llvm::CallInst::Create(
-            llvm::cast<llvm::Function>(M.getFunction(*mangled_name)),
-            { obj, instrumentation_utils::create_global_cstring_const(M, "", mGVar->getName().str()), index },
-            "",
-            I
-         );
+         using namespace llvm;
+         static Type* object_type = module.getTypeByName("class.program_model::Object");
+         static Function* add_index = cast<Function>(module.getFunction("_ZN13program_model6Object9add_indexEi"));
+         static Function* llvm_object = cast<Function>(module.getFunction(*mangled_name));
+         
+         AllocaInst* obj = new AllocaInst(object_type, "obj", before);
+         CallInst::Create(llvm_object,
+                          { obj, instrumentation_utils::create_global_cstring_const(module, "", m_gvar->getName().str()) },
+                          "",
+                          before);
+         
+         for (const auto& index : m_indices)
+         {
+            CallInst::Create(add_index, { obj, integer(module, before, index) }, "", before);
+         }
          return obj;
       }
-      
       return nullptr;
    }
    
    //-------------------------------------------------------------------------------------
     
-   boost::optional<VisibleInstruction> get_visible(llvm::Instruction* I)
+   boost::optional<visible_operation_t> get_visible_operation(llvm::Instruction* I)
    {
-      using namespace utils::io;
-      PRINTF(text_color("\t\trecord_replay", Color::YELLOW), "get_visible", "", ""); I->dump();
+      using Op = program_model::Object::Op;
       
       // READ
       if (llvm::LoadInst* LI = llvm::dyn_cast<llvm::LoadInst>(I))
       {
-         return get_visible(Op::READ, LI->getPointerOperand());
+         return boost::make_optional(visible_operation_t(Op::READ, LI->getPointerOperand()));
       }
       
       // WRITE
       if (llvm::StoreInst* SI = llvm::dyn_cast<llvm::StoreInst>(I))
       {
-         return get_visible(Op::WRITE, SI->getPointerOperand());
+         return boost::make_optional(visible_operation_t(Op::WRITE, SI->getPointerOperand()));
       }
       
       if (llvm::CallInst* CI = llvm::dyn_cast<llvm::CallInst>(I))
@@ -112,124 +99,98 @@ namespace record_replay
          // LOCK
          if (callee->getName() == "pthread_mutex_lock")
          {
-            return get_visible(Op::LOCK, CI->getArgOperand(0));
+            return boost::make_optional(visible_operation_t(Op::LOCK, CI->getArgOperand(0)));
          }
          
          // UNLOCK
          if(callee->getName() == "pthread_mutex_unlock")
          {
-            return get_visible(Op::UNLOCK, CI->getArgOperand(0));
+            return boost::make_optional(visible_operation_t(Op::UNLOCK, CI->getArgOperand(0)));
          }
       }
       
-      PRINT("\t\t" << text_color("Unhandled/Invisible Instruction ", Color::RED) << "\n");
-      return boost::optional<VisibleInstruction>();
+      if (!llvm::isa<llvm::AllocaInst>(I))
+      {
+         using namespace utils::io;
+         PRINT(text_color("unhandled", Color::RED));
+      }
+      I->dump();
+      return boost::optional<visible_operation_t>();
+   }
+   
+   //-------------------------------------------------------------------------------------
+   
+   opt_visible_instruction_t get_visible_instruction(llvm::Instruction* instr)
+   {
+      auto visible_operation = get_visible_operation(instr);
+      if (visible_operation)
+      {
+         using namespace utils::io;
+         PRINT("-----\n" << text_color(to_string(visible_operation->first), Color::GREEN) << "\n");
+         auto shared_object = get_shared_object(visible_operation->second);
+         PRINT("-----\n");
+         if (shared_object)
+         {
+            return boost::make_optional(visible_instruction_t(visible_operation->first, *shared_object));
+         }
+      }
+      return boost::optional<visible_instruction_t>();
    }
    
    //-------------------------------------------------------------------------------------
     
-   boost::optional<VisibleInstruction> get_visible(const Op& op, llvm::Value* operand)
+   boost::optional<shared_object> get_shared_object(llvm::Value* operand)
    {
       using namespace utils::io;
-      PRINTF(text_color("\t\t\trecord_replay", Color::YELLOW), "get_visible", "", "");
       
-      operand->dump();
+      std::deque<llvm::Value*> indices;
       
-      // 1. If addr is a GlobalVariable
-      if (llvm::GlobalVariable* gvar = llvm::dyn_cast<llvm::GlobalVariable>(operand))
+      while (true)
       {
-         PRINT("\t\t\t\t" << text_color("GlobalVariable ", Color::GREEN) << "\n");
-         return boost::make_optional(VisibleInstruction(op, gvar, nullptr));
-      }
-      
-      // 2. If addr is a Constant C
-      if (llvm::Constant* C = llvm::dyn_cast<llvm::Constant>(operand))
-      {
-         // 2.1. If C is a ConstantExpression CE
-         if (llvm::ConstantExpr* CE = llvm::dyn_cast<llvm::ConstantExpr>(C))
+         // GlobalVariable
+         if (llvm::GlobalVariable* gvar = llvm::dyn_cast<llvm::GlobalVariable>(operand))
          {
-            // 2.1.1. If CE is a GEP
-            if (CE->isGEPWithNoNotionalOverIndexing())
+            PRINT(text_color("GlobalVariable=", Color::GREEN) << gvar->getName() << "\n");
+            for (const auto& index : indices)
             {
-               return get_visible(op, CE->getOperand(0), CE->getOperand(1), CE->getOperand(2));
+               index->dump();
             }
-            
-            // 2.1.2. Otherwise UNHANDLED
-            else
-            {
-               PRINT("\t\t\t\t" << text_color("Unhandled ConstantExpr", Color::RED) << "\n");
-            }
+            return boost::make_optional(shared_object(gvar, indices));
          }
          
-         // 2.2. Otherwise UNHANDLED
-         else
+         llvm::User* user = nullptr;
+         
+         if (llvm::ConstantExpr* const_expr = llvm::dyn_cast<llvm::ConstantExpr>(operand))
          {
-            PRINT("\t\t\t\t" << text_color("Unhandled Constant", Color::RED) << "\n");
+            if (const_expr->isGEPWithNoNotionalOverIndexing())
+            {
+               user = const_expr;
+               operand = const_expr->getOperand(0);
+            }
          }
-      }
-      
-      // 3. If addr is an Instruction
-      else if (llvm::Instruction* I = llvm::dyn_cast<llvm::Instruction>(operand))
-      {
-         // 3.1. If instr is a GetElementPtrInst
-         // GEP's are involved in computing addresses.
-         /// @see http://llvm.org/docs/GetElementPtr.html
-         /// @see http://llvm.org/docs/doxygen/html/classllvm_1_1GetElementPtrInst.html
-         if (llvm::GetElementPtrInst* gep = llvm::dyn_cast<llvm::GetElementPtrInst>(I))
+         else if (llvm::GetElementPtrInst* gep = llvm::dyn_cast<llvm::GetElementPtrInst>(operand))
          {
-            // 3.1.1. If gep's pointer operand is not a struct type
             if (!gep->getPointerOperand()->getType()->isStructTy())
             {
-					if (op == Op::LOCK || op == Op::UNLOCK)
-               {
-                  if (llvm::ConstantExpr* gep2 = llvm::dyn_cast<llvm::ConstantExpr>(gep->getPointerOperand()))
-                  {
-                     return get_visible(op, gep2->getOperand(0), gep2->getOperand(1), gep->getOperand(1));
-                  }
-               }
-               return get_visible(op, gep->getPointerOperand(), gep->getOperand(1), gep->getOperand(2));
-            }
-            
-            // 3.1.2. Otherwise UNHANDLED
-            else
-            {
-               PRINT("\t\t\t\t" << text_color("Unhandled GEP with struct type ptrop", Color::RED) << "\n");
+               user = gep;
+               operand = gep->getPointerOperand();
             }
          }
          
-         // 3.2. Otherwise UNHANDLED
+         // Add indices to the deque
+         if (user && user->getNumOperands() > 1)
+         {
+            PRINT(text_color("GEP pointer_op=", Color::GREEN)); operand->dump();
+            auto begin = user->op_begin();
+            ++begin;
+            std::reverse_copy(begin, user->op_end(), std::front_inserter(indices));
+         }
          else
          {
-            PRINT("\t\t\t\t" << text_color("Unhandled Instruction", Color::RED) << "\n");
+            PRINT(text_color("unhandled", Color::RED) << "\n");
+            return boost::optional<shared_object>();
          }
       }
-      
-      // 4. Otherwise UNHANDLED
-      else
-      {
-         PRINT("\t\t\t\t" << text_color("Unhandled Value", Color::RED) << "\n");
-      }
-      return boost::optional<VisibleInstruction>();
-   }
-   
-   //-------------------------------------------------------------------------------------
-    
-   boost::optional<VisibleInstruction> get_visible(const Op& op,
-                                                   llvm::Value* ptrop,
-                                                   llvm::Value* indexop1,
-                                                   llvm::Value* indexop2)
-   {
-      using namespace utils::io;
-      PRINTF(text_color("\t\t\t\trecord_replay", Color::YELLOW), "get_visible", "", "\n");
-      
-      if (llvm::GlobalVariable* gvar = llvm::dyn_cast<llvm::GlobalVariable>(ptrop))
-      {
-         PRINT("\t\t\t\t\t" << text_color("GlobalVariable ", Color::GREEN) << "\n");
-         return boost::make_optional(VisibleInstruction(op, gvar, indexop2));
-      }
-      
-      PRINT("\t\t\t\t\t" << text_color("Unhandled GEP", Color::RED) << "\n");
-      return boost::optional<VisibleInstruction>();
    }
    
    //-------------------------------------------------------------------------------------

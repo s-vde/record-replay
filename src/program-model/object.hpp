@@ -3,11 +3,12 @@
 
 // STL
 #include <string>
+#include <vector>
 
 //--------------------------------------------------------------------------------------90
 /// @file object.hpp
 /// @author Susanne van den Elsen
-/// @date 2015
+/// @date 2015-2016
 //----------------------------------------------------------------------------------------
 
 namespace program_model
@@ -18,6 +19,8 @@ namespace program_model
    {
    public:
       
+      using indices_t = std::vector<int>;
+      
       //----------------------------------------------------------------------------------
       
       enum class Op { READ = 0, WRITE = 1, LOCK = 2, UNLOCK = 3 };
@@ -27,7 +30,7 @@ namespace program_model
       /// @brief Constructor.
       /// @note Default arguments construct dummy Object.
       
-      explicit Object(std::string gvar="", const int index=0);
+      explicit Object(std::string gvar="", const indices_t& indices={});
       
       //----------------------------------------------------------------------------------
         
@@ -41,9 +44,7 @@ namespace program_model
       
       //----------------------------------------------------------------------------------
       
-      /// @brief Getter.
-      
-      int index() const;
+      void add_index(int index);
       
       //----------------------------------------------------------------------------------
         
@@ -52,10 +53,12 @@ namespace program_model
       //----------------------------------------------------------------------------------
       
       std::string mVar;
-      int mIndex;
+      indices_t mIndices;
       
       //----------------------------------------------------------------------------------
         
+      friend std::string to_pretty_string(const Object&);
+      friend std::ostream& operator<<(std::ostream& os, const Object& obj);
       friend std::istream& operator>>(std::istream&, Object&);
       
       //----------------------------------------------------------------------------------

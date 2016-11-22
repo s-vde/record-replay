@@ -9,7 +9,7 @@
 /// @file object_io.hpp
 /// @brief Input/output stream operator and to_string overloads for Object.
 /// @author Susanne van den Elsen
-/// @date 2015
+/// @date 2015-2016
 //----------------------------------------------------------------------------------------
 
 namespace program_model

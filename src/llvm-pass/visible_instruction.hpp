@@ -6,72 +6,74 @@
 // BOOST
 #include <boost/optional.hpp>
 
-// LLVM
-#include "llvm/IR/Module.h"
+// STL
+#include <deque>
 
 //--------------------------------------------------------------------------------------90
 /// @file visible_instruction.hpp
 /// @author Susanne van den Elsen
-/// @date 2015
+/// @date 2015-2016
+//----------------------------------------------------------------------------------------
+
+namespace llvm
+{
+   class GlobalVariable;
+   class Instruction;
+   class Module;
+   class Value;
+}
+
 //----------------------------------------------------------------------------------------
 
 namespace record_replay
 {
    //-------------------------------------------------------------------------------------
    
-   using Op = program_model::Object::Op;
-   
-   //-------------------------------------------------------------------------------------
-   
-   class VisibleInstruction
+   class shared_object
    {
    public:
-
+      
+      //----------------------------------------------------------------------------------
+      
+      using indices_t = std::deque<llvm::Value*>;
+      
       //----------------------------------------------------------------------------------
       
       /// @brief Constructor.
       
-      explicit VisibleInstruction(const Op& op=Op::READ,
-                                  llvm::GlobalVariable* gvar=nullptr,
-                                  llvm::Value* index=nullptr);
-      
-      //----------------------------------------------------------------------------------
-        
-      /// @brief Getter.
-      
-      const Op& op() const;
+      shared_object(llvm::GlobalVariable* gvar, const indices_t& indices);
       
       //----------------------------------------------------------------------------------
       
-      /// @brief Adds the construction of a program_model::Object corresponding to this
-      /// VisibleInstruction after I.
+      /// @brief Constructs a program_model::Object from this shared_object before
+      /// llvm::Instruction before and returns a pointer to it.
       
-      llvm::Value* object(llvm::Module& M, llvm::Instruction* I) const;
+      llvm::Value* construct_model(llvm::Module& module, llvm::Instruction* before) const;
       
       //----------------------------------------------------------------------------------
       
    private:
-
-      //----------------------------------------------------------------------------------
-        
-      Op mOp;
-      llvm::GlobalVariable* mGVar;
-      llvm::Value* mIndex;
       
       //----------------------------------------------------------------------------------
-        
-   }; // end class VisibleInstruction
+      
+      llvm::GlobalVariable* m_gvar;
+      indices_t m_indices;
+      
+      //----------------------------------------------------------------------------------
+      
+   }; // end class shared_object
+   
+   //-------------------------------------------------------------------------------------
+   
+   using visible_operation_t = std::pair<program_model::Object::Op, llvm::Value*>;
+   using visible_instruction_t = std::pair<program_model::Object::Op, shared_object>;
+   using opt_visible_instruction_t = boost::optional<visible_instruction_t>;
    
    //-------------------------------------------------------------------------------------
     
-   boost::optional<VisibleInstruction> get_visible(llvm::Instruction* I);
-    
-   boost::optional<VisibleInstruction> get_visible(const Op& op, llvm::Value* operand);
-    
-   boost::optional<VisibleInstruction> get_visible(const Op& op,
-                                                   llvm::Value* ptrop,
-                                                   llvm::Value* indexop1,
-                                                   llvm::Value* indexop2);
+   opt_visible_instruction_t get_visible_instruction(llvm::Instruction* instr);
+   
+   boost::optional<shared_object> get_shared_object(llvm::Value* operand);
    
    //-------------------------------------------------------------------------------------
     

@@ -7,15 +7,15 @@ namespace program_model
 {
    //-------------------------------------------------------------------------------------
    
-   Object::Object(std::string var, const int index)
+   Object::Object(std::string var, const indices_t& indices)
    : mVar(var)
-   , mIndex(index) { }
+   , mIndices(indices) { }
    
    //-------------------------------------------------------------------------------------
     
    bool Object::operator==(const Object& other) const
    {
-      return mVar == other.mVar && mIndex == other.mIndex;
+      return mVar == other.mVar && mIndices == other.mIndices;
    }
    
    //-------------------------------------------------------------------------------------
@@ -26,17 +26,17 @@ namespace program_model
    }
    
    //-------------------------------------------------------------------------------------
-    
-   int Object::index() const
+   
+   void Object::add_index(int index)
    {
-      return mIndex;
+      mIndices.push_back(index);
    }
    
    //-------------------------------------------------------------------------------------
 	
-   Object llvm_object(const char* gvar, const int index)
+   Object llvm_object(const char* gvar)
    {
-      return Object(gvar, index);
+      return Object(gvar);
    }
    
    //-------------------------------------------------------------------------------------

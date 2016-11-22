@@ -155,10 +155,9 @@ namespace record_replay
                                              const FunctionSet& Done)
    {
       PRINTF("\n\t" << outputname(), "instrument_function", F->getName(), "\n");
-      std::pair<bool,VisibleInstruction> visible_on;
       for (auto instr = llvm::inst_begin(F); instr != llvm::inst_end(F); ++instr)
       {
-         const auto& visible_instr = get_visible(&*instr);
+         const auto visible_instr = get_visible_instruction(&*instr);
          if (visible_instr)
          {
             wrap_visible_instruction(M, &*instr, *visible_instr);
@@ -198,15 +197,15 @@ namespace record_replay
     
    void LightWeightPass::wrap_visible_instruction(llvm::Module& M,
                                                   llvm::BasicBlock::iterator I,
-                                                  const VisibleInstruction& instr)
+                                                  const visible_instruction_t& instr)
    {
       PRINTF("\t\t" << outputname(), "wrap_visible_instruction", "", "\n");
       llvm::CallInst::Create(
          mFunctions.Wrapper_post_task(),
          {
             mScheduler,
-            llvm::ConstantInt::get(M.getContext(), llvm::APInt(32, static_cast<int>(instr.op()), false)),
-            instr.object(M, I)
+            llvm::ConstantInt::get(M.getContext(), llvm::APInt(32, static_cast<int>(instr.first), false)),
+            instr.second.construct_model(M, I)
          },
          "",
          I

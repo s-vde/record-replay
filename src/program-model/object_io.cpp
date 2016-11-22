@@ -1,6 +1,10 @@
 
 #include "object_io.hpp"
 
+// UTILS
+#include "container_io.hpp"
+#include "utils_io.hpp"
+
 // STL
 #include <iostream>
 
@@ -47,7 +51,7 @@ namespace program_model
    {
       std::string str = obj.var();
       str += "[";
-      str += std::to_string(obj.index());
+      str += utils::io::to_string(obj.mIndices);
       str += "]";
       return str;
    }
@@ -56,7 +60,7 @@ namespace program_model
     
    std::ostream& operator<<(std::ostream& os, const Object& obj)
    {
-      os << obj.var() << " " << obj.index();
+      os << obj.var() << " " << obj.mIndices;
       return os;
    }
    
@@ -64,7 +68,7 @@ namespace program_model
     
    std::istream& operator>>(std::istream& is, Object& obj)
    {
-      is >> obj.mVar >> obj.mIndex;
+      is >> obj.mVar >> obj.mIndices;
       return is;
    }
    

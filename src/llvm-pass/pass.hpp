@@ -2,6 +2,7 @@
 
 // LLVM_PASS
 #include "functions.hpp"
+#include "visible_instruction.hpp"
 
 // LLVM
 #include "llvm/Pass.h"
@@ -15,15 +16,11 @@
 /// @file pass.hpp
 /// @brief Definition of llvm::ModulePass LightWeightPass.
 /// @author Susanne van den Elsen
-/// @date 2015
+/// @date 2015-2016
 //----------------------------------------------------------------------------------------
 
 namespace record_replay
 {
-   //-------------------------------------------------------------------------------------
-   
-   class VisibleInstruction; 	// forward declaration
-	
    //-------------------------------------------------------------------------------------
    
    /// @brief An LLVM ModulePass that instruments an LLVM IR module of an input program
@@ -131,7 +128,7 @@ namespace record_replay
 
       void wrap_visible_instruction(llvm::Module&,
                                     llvm::BasicBlock::iterator,
-                                    const VisibleInstruction&);
+                                    const visible_instruction_t&);
       
       //----------------------------------------------------------------------------------
         
