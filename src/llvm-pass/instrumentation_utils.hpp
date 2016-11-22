@@ -1,12 +1,13 @@
 #pragma once
 
 // LLVM
-#include "llvm/IR/Module.h"
+#include <llvm/ADT/ArrayRef.h>
 
 // BOOST
 #include <boost/optional.hpp>
 
 // STL
+#include <string>
 #include <vector>
 
 //--------------------------------------------------------------------------------------90
@@ -14,6 +15,19 @@
 /// @brief Set of utility functions for instrumentation of LLVM IR modules.
 /// @author Susanne van den Elsen
 /// @date 2015
+//----------------------------------------------------------------------------------------
+
+namespace llvm
+{
+   class CallInst;
+   class Constant;
+   class Function;
+   class FunctionType;
+   class Module;
+   class Value;
+   class Type;
+}
+
 //----------------------------------------------------------------------------------------
 
 namespace instrumentation_utils

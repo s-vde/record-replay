@@ -5,6 +5,9 @@
 #include "instrumentation_utils.hpp"
 #include "print.hpp"
 
+// LLVM
+#include <llvm/IR/Module.h>
+
 namespace record_replay
 {
    //-------------------------------------------------------------------------------------

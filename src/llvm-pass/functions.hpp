@@ -1,16 +1,22 @@
 #pragma once
 
-// LLVM
-#include "llvm/IR/Module.h"
-
 // STL
 #include <set>
+#include <string>
 #include <unordered_map>
 
 //--------------------------------------------------------------------------------------90
 /// @file functions.hpp
 /// @author Susanne van den Elsen
 /// @date 2015
+//----------------------------------------------------------------------------------------
+
+namespace llvm
+{
+   class Function;
+   class Module;
+}
+
 //----------------------------------------------------------------------------------------
 
 namespace record_replay

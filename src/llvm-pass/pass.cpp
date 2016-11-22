@@ -10,8 +10,9 @@
 #include "color_output.hpp"
 
 // LLVM
-#include "llvm/IR/InstIterator.h"
-#include "llvm/IR/IRBuilder.h"
+#include <llvm/IR/InstIterator.h>
+#include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/Module.h>
 
 namespace record_replay
 {

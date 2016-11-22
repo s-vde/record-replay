@@ -5,8 +5,8 @@
 #include "visible_instruction.hpp"
 
 // LLVM
-#include "llvm/Pass.h"
-#include "llvm/IR/Module.h"
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/Pass.h>
 
 // STL
 #include <set>

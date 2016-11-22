@@ -12,7 +12,8 @@
 #include "color_output.hpp"
 
 // LLVM
-#include "llvm/IR/IRBuilder.h"
+#include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/Module.h>
 
 // STL
 #include <algorithm>
