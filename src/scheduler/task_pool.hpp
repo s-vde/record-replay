@@ -1,7 +1,7 @@
 #pragma once
 
 // SCHEDULER
-#include "lockobject.hpp"
+#include "object_state.hpp"
 
 // PROGRAM_MODEL
 #include "state.hpp"
@@ -15,7 +15,7 @@ using namespace program_model;
 //--------------------------------------------------------------------------------------90
 /// @file task_pool.hpp
 /// @author Susanne van den Elsen
-/// @date 2015
+/// @date 2015-2016
 //----------------------------------------------------------------------------------------
 
 namespace scheduler
@@ -38,7 +38,7 @@ namespace scheduler
 
       using Tasks = std::unordered_map<Thread::tid_t,Instruction>;
       using Threads = std::unordered_map<Thread::tid_t,Thread>;
-      using LockObs = std::unordered_map<std::string,LockObject>;
+      using objects_t = std::unordered_map<std::string,object_state>;
       
       //----------------------------------------------------------------------------------
         
@@ -59,7 +59,7 @@ namespace scheduler
       
       /// @brief Constructor.
         
-      explicit TaskPool(const unsigned int nr_threads);
+      TaskPool() = default;
       
       //----------------------------------------------------------------------------------
       
@@ -172,7 +172,11 @@ namespace scheduler
       std::unique_ptr<State> program_state();
       
       //----------------------------------------------------------------------------------
-        
+      
+      std::vector<data_race::type> data_races() const;
+   
+      //----------------------------------------------------------------------------------
+      
    private:
         
       //----------------------------------------------------------------------------------
@@ -196,15 +200,19 @@ namespace scheduler
       
       //----------------------------------------------------------------------------------
 
-      /// @brief Datastructure containing the LockObjects operated on by the program.
+      /// @brief Datastructure containing the objects operated on by the program.
 
-      LockObs mLockObs;
+      objects_t m_objects;
+      
+      //----------------------------------------------------------------------------------
+      
+      std::vector<data_race::type> m_data_races;
       
       //----------------------------------------------------------------------------------
         
-      /// @brief Mutex protecting mLockObs.
+      /// @brief Mutex protecting m_objects and m_data_races.
 
-      std::mutex mLockObsMutex;
+      mutable std::mutex m_objects_mutex;
       
       //----------------------------------------------------------------------------------
         
@@ -222,32 +230,17 @@ namespace scheduler
       
       //----------------------------------------------------------------------------------
 
-      /// @brief Takes care of registration of tasks operating on a lock object.
-      /// @details Enabledness of such a task is determined based on its Op op and the
-      /// status of the Object obj it operates on.
-      /// - If op == LOCK, the task is enabled iff !obj.locked;
-      /// - If op == UNLOCK, we assume that tid holds the lock obj and the task is
-      /// enabled;
-      /// - Otherwise, the task is enabled.
-      /// If obj is not yet registered in mLockObs, an entry is created.
-
-      void post_lock_instruction(const Thread::tid_t& tid, const Instruction& task);
-      
+      void update_object_post(const Thread::tid_t& tid, const Instruction& task);
+   
       //----------------------------------------------------------------------------------
-
-      /// @brief Updates the status of the Object the given task operates on.
-      /// @details
-      /// - If task.op == LOCK, all threads waiting on obj are set to DISABLED in mThreads.
-      /// - If task.op == UNLOCK, all threads waiting on obj are set to ENABLED in mThreads.
-      /// @returns true iff locking/unlocking the Object succeeded.
       
-      void  update_lockobj(const Instruction& task);
+      void update_object_yield(const Instruction& task);
       
       //----------------------------------------------------------------------------------
 
       /// @brief Set the status of all Threads with lock requests on obj to the given one.
 
-      void set_status_of_waiting_on(const LockObject& obj, const Thread::Status&);
+      void set_status_of_waiting_on(const object_state& obj, const Thread::Status&);
       
       //----------------------------------------------------------------------------------
         

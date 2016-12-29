@@ -16,7 +16,7 @@ namespace scheduler
    
    Scheduler::Scheduler()
    : mLocVars(std::make_unique<LocalVars>())
-   , mPool(mLocVars->nr_threads())
+   , mPool()
    , mControl()
    , mThreads()
    , mNrRegistered(0)
@@ -296,6 +296,7 @@ namespace scheduler
       }
       E.set_status(status());
       dump_execution(E);
+      DEBUG(mPool.data_races() << "\n");
    }
    
    //-------------------------------------------------------------------------------------

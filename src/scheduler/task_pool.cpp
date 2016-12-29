@@ -19,16 +19,6 @@
 namespace scheduler
 {
    //-------------------------------------------------------------------------------------
-   
-   TaskPool::TaskPool(const unsigned int nr_threads)
-   : mMutex()
-   , mModified()
-   , mTasks()
-   , mCurrentTask(nullptr)
-   , mLockObs()
-   , mLockObsMutex() { }
-   
-   //-------------------------------------------------------------------------------------
     
    void TaskPool::register_thread(const Thread::tid_t& tid)
    {
@@ -39,24 +29,15 @@ namespace scheduler
    }
    
    //-------------------------------------------------------------------------------------
-    
-   /// @see TaskPool::post_lock_instruction
  
    void TaskPool::post(const Thread::tid_t& tid, const Instruction& task)
    {
-      std::lock_guard<std::mutex> guard(mMutex);
+      std::lock_guard<std::mutex> lock_mutex(mMutex);
       auto task_it(mTasks.find(tid));
       /// @pre mTasks.find(tid) == mTasks.end()
       assert(task_it == mTasks.end());
       mTasks.insert(Tasks::value_type(tid, task));
-      if (task.op() == Object::Op::LOCK)
-      {
-         post_lock_instruction(tid, task);
-      }
-      else
-      {
-         set_status(tid, Thread::Status::ENABLED);
-      }
+      update_object_post(tid, task);
       // cond SIGNAL mModified
       mModified.notify_one();
    }
@@ -66,13 +47,10 @@ namespace scheduler
    void TaskPool::yield(const Thread::tid_t& tid)
    {
       std::lock_guard<std::mutex> guard(mMutex);
-      DEBUGFNL("Taskpool", "yield", tid, "");
+      DEBUGF_SYNC("Taskpool", "yield", tid, "\n");
       /// @pre mCurrentTask->tid == tid
       assert(mCurrentTask != nullptr && mCurrentTask->tid() == tid);
-      if (is_lock_access(*mCurrentTask))
-      {
-         update_lockobj(*mCurrentTask);
-      }
+      update_object_yield(*mCurrentTask);
    }
    
    //-------------------------------------------------------------------------------------
@@ -223,6 +201,14 @@ namespace scheduler
    }
    
    //-------------------------------------------------------------------------------------
+   
+   std::vector<data_race::type> TaskPool::data_races() const
+   {
+      std::lock_guard<std::mutex> lock(m_objects_mutex);
+      return m_data_races;
+   }
+   
+   //-------------------------------------------------------------------------------------
 
    Thread::Status TaskPool::status(const Thread::tid_t& tid) const
    {
@@ -243,54 +229,48 @@ namespace scheduler
    
    //-------------------------------------------------------------------------------------
 
-   /// @note If task is a LOCK Instruction, its status has to be set within the same
-   /// mLockObsMutex block as the request_lock statement, because otherwise the
-   /// enabledness may be changed by a task_done by the lock object's owner.
-   /// @see LockObject::request_lock
-
-   void TaskPool::post_lock_instruction(const Thread::tid_t& tid, const Instruction& task)
+   void TaskPool::update_object_post(const Thread::tid_t& tid, const Instruction& task)
    {
       const std::string name(to_pretty_string(task.obj()));
-      std::lock_guard<std::mutex> guard(mLockObsMutex);
-      // Create a new LockObject if one with name does not exist in mLockObs
-      if (mLockObs.find(name) == mLockObs.end())
+      std::lock_guard<std::mutex> lock(m_objects_mutex);
+      // Create a new object if one with name does not exist in m_objects
+      if (m_objects.find(name) == m_objects.end())
       {
-         mLockObs.insert(std::pair<std::string,LockObject>(name, LockObject(name)));
+         m_objects.insert(std::pair<std::string,object_state>(name, object_state(task.obj())));
       }
-      bool enabled = mLockObs.find(name)->second.request_lock(task);
+      // Update m_data_races
+      auto& operand = m_objects.find(name)->second;
+      auto data_races = data_race::get_data_races(operand, task);
+      std::move(data_races.begin(), data_races.end(), std::back_inserter(m_data_races));
+      // Update status of threads operating on same operand
+      const auto result = operand.request(task);
+      bool enabled = !is_lock_access(task) || result == 0;
       set_status(tid, (enabled ? Thread::Status::ENABLED : Thread::Status::DISABLED));
    }
    
    //-------------------------------------------------------------------------------------
     
-   void TaskPool::update_lockobj(const Instruction& task)
+   void TaskPool::update_object_yield(const Instruction& task)
    {
-      /// @pre task == *mCurrentTask && is_lock_access(task)
-      assert(task == *mCurrentTask && is_lock_access(task));
-      DEBUGFNL("Taskpool", "update_lockobj", task, "");
-
-      std::lock_guard<std::mutex> guard(mLockObsMutex);
-      auto obj = mLockObs.find(to_pretty_string(task.obj()));
+      std::lock_guard<std::mutex> lock(m_objects_mutex);
+      auto obj = m_objects.find(to_pretty_string(task.obj()));
       /// @pre mLockObs.find(task.obj()) != mLockObs.end()
-      assert(obj != mLockObs.end());
-      bool lock = task.op() == Object::Op::LOCK;
-      bool succeed = lock ? obj->second.lock(task.tid()) : obj->second.unlock(task.tid());
-      /// @pre lock -> obj->second.lock(task.tid()) && !lock -> obj->second.unlock(task.tid())
-      assert(succeed);
+      assert(obj != m_objects.end());
+      obj->second.perform(task.tid());
+      const bool is_lock = task.op() == Object::Op::LOCK;
       set_status_of_waiting_on(obj->second,
-                               (lock ? Thread::Status::DISABLED : Thread::Status::ENABLED));
+                               (is_lock ? Thread::Status::DISABLED : Thread::Status::ENABLED));
    }
    
    //-------------------------------------------------------------------------------------
 
-   void TaskPool::set_status_of_waiting_on(const LockObject& obj,
-                                           const Thread::Status& status)
+   void TaskPool::set_status_of_waiting_on(const object_state& object, const Thread::Status& status)
    {
-      DEBUGFNL("TaskPool", "set_status_of_waiting_on", obj.oid() << ", " << to_string(status), "");
-      std::for_each(
-         obj.waiting_begin(), obj.waiting_end(),
-         [&status, this] (const auto& request) { set_status(request.first, status); }
-      );
+      DEBUGFNL("TaskPool", "set_status_of_waiting_on", object.str() << ", " << to_string(status), "");
+      std::for_each(object.begin(0), object.end(0),
+                    [&status, this] (const auto& request) { set_status(request.first, status); });
+      std::for_each(object.begin(1), object.end(1),
+                    [&status, this] (const auto& request) { set_status(request.first, status); });
    }
    
    //-------------------------------------------------------------------------------------
