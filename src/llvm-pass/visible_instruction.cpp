@@ -76,54 +76,11 @@ namespace record_replay
    }
    
    //-------------------------------------------------------------------------------------
-    
-   boost::optional<visible_operation_t> get_visible_operation(llvm::Instruction* I)
-   {
-      using Op = program_model::Object::Op;
-      
-      // READ
-      if (llvm::LoadInst* LI = llvm::dyn_cast<llvm::LoadInst>(I))
-      {
-         return boost::make_optional(visible_operation_t(Op::READ, LI->getPointerOperand()));
-      }
-      
-      // WRITE
-      if (llvm::StoreInst* SI = llvm::dyn_cast<llvm::StoreInst>(I))
-      {
-         return boost::make_optional(visible_operation_t(Op::WRITE, SI->getPointerOperand()));
-      }
-      
-      if (llvm::CallInst* CI = llvm::dyn_cast<llvm::CallInst>(I))
-      {
-         llvm::Function* callee = CI->getCalledFunction();
-         
-         // LOCK
-         if (callee->getName() == "pthread_mutex_lock")
-         {
-            return boost::make_optional(visible_operation_t(Op::LOCK, CI->getArgOperand(0)));
-         }
-         
-         // UNLOCK
-         if(callee->getName() == "pthread_mutex_unlock")
-         {
-            return boost::make_optional(visible_operation_t(Op::UNLOCK, CI->getArgOperand(0)));
-         }
-      }
-      
-      if (!llvm::isa<llvm::AllocaInst>(I))
-      {
-         using namespace utils::io;
-         PRINT(text_color("unhandled", Color::RED));
-      }
-      I->dump();
-      return boost::optional<visible_operation_t>();
-   }
-   
-   //-------------------------------------------------------------------------------------
    
    opt_visible_instruction_t get_visible_instruction(llvm::Instruction* instr)
    {
-      auto visible_operation = get_visible_operation(instr);
+      visible_operation_creator operation_creator;
+      auto visible_operation = operation_creator.visit(instr);
       if (visible_operation)
       {
          using namespace utils::io;
@@ -192,6 +149,61 @@ namespace record_replay
             return boost::optional<shared_object>();
          }
       }
+   }
+   
+   //-------------------------------------------------------------------------------------
+   
+   auto visible_operation_creator::visitLoadInst(llvm::LoadInst& instr) -> return_type
+   {
+      return boost::make_optional(visible_operation_t(program_model::Object::Op::READ,
+                                                      instr.getPointerOperand()));
+   }
+   
+   //-------------------------------------------------------------------------------------
+   
+   auto visible_operation_creator::visitStoreInst(llvm::StoreInst& instr) -> return_type
+   {
+      return boost::make_optional(visible_operation_t(program_model::Object::Op::WRITE,
+                                                      instr.getPointerOperand()));
+   }
+   
+   //-------------------------------------------------------------------------------------
+   
+   auto visible_operation_creator::visitAtomicCmpXchgInst(llvm::AtomicCmpXchgInst& instr) -> return_type
+   {
+      PRINT("AtomicCompareExchange\n");
+      return return_type();
+   }
+   
+   //-------------------------------------------------------------------------------------
+   
+   auto visible_operation_creator::visitCallInst(llvm::CallInst& instr) -> return_type
+   {
+      using Op = program_model::Object::Op;
+      llvm::Function* callee = instr.getCalledFunction();
+      
+      if (callee->getName() == "pthread_mutex_lock")
+      {
+         return boost::make_optional(visible_operation_t(Op::LOCK, instr.getArgOperand(0)));
+      }
+      else if (callee->getName() == "pthread_mutex_unlock")
+      {
+         return boost::make_optional(visible_operation_t(Op::UNLOCK, instr.getArgOperand(0)));
+      }
+      
+      return return_type();
+   }
+   
+   //-------------------------------------------------------------------------------------
+   
+   auto visible_operation_creator::visitInstruction(llvm::Instruction& instr) -> return_type
+   {
+      if (!llvm::isa<llvm::AllocaInst>(instr))
+      {
+         PRINT(utils::io::text_color("unhandled", utils::io::Color::RED));
+      }
+      instr.dump();
+      return return_type();
    }
    
    //-------------------------------------------------------------------------------------

@@ -3,6 +3,9 @@
 // PROGRAM_MODEL
 #include "object.hpp"
 
+// LLVM
+#include <llvm/IR/InstVisitor.h>
+
 // BOOST
 #include <boost/optional.hpp>
 
@@ -76,5 +79,19 @@ namespace record_replay
    boost::optional<shared_object> get_shared_object(llvm::Value* operand);
    
    //-------------------------------------------------------------------------------------
-    
+   
+   struct visible_operation_creator
+   : public llvm::InstVisitor<visible_operation_creator, boost::optional<visible_operation_t>>
+   {
+      using return_type = boost::optional<visible_operation_t>;
+      
+      return_type visitLoadInst(llvm::LoadInst& instr);
+      return_type visitStoreInst(llvm::StoreInst& instr);
+      return_type visitAtomicCmpXchgInst(llvm::AtomicCmpXchgInst& instr);
+      return_type visitCallInst(llvm::CallInst& instr);
+      return_type visitInstruction(llvm::Instruction& instr);
+   };
+   
+   //-------------------------------------------------------------------------------------
+   
 } // end namespace record_replay

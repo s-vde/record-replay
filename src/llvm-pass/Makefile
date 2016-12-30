@@ -39,7 +39,7 @@ pass:
 	cp $(llvm_pass_src)/Makefile.llvm $(PASSBUILD)/$(passdir)/Makefile
 	cp $(llvm_pass_src)/Makefile.llvm $(PASSSRC)/$(passdir)/Makefile
 	cp $(llvm_pass_files) $(PASSSRC)/$(passdir)
-	for file in debug error color_output container_format container_input container_output utils_io; do \
+	for file in debug error color_output container_format container_input container_io container_output utils_io; do \
 		cp $(utils_src)/$$file.* $(PASSSRC)/$(passdir); \
 	done
 	for file in object object_io; do \
