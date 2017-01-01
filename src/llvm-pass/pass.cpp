@@ -135,7 +135,6 @@ namespace record_replay
     
    void LightWeightPass::instrument_functions(llvm::Module& M)
    {
-      PRINTF(outputname(), "instrument_functions", "", "\n");
       FunctionSet Done{};
       FunctionSet ToInstrument{};
       std::copy(mStartRoutines.begin(), mStartRoutines.end(), std::inserter(ToInstrument, ToInstrument.end()));
@@ -155,7 +154,7 @@ namespace record_replay
                                              FunctionSet& ToInstrument,
                                              const FunctionSet& Done)
    {
-      PRINTF("\n\t" << outputname(), "instrument_function", F->getName(), "\n");
+      PRINTF("\n----------\n" << outputname(), "instrument_function", F->getName(), "\n");
       for (auto instr = llvm::inst_begin(F); instr != llvm::inst_end(F); ++instr)
       {
          const auto visible_instr = get_visible_instruction(&*instr);
@@ -200,7 +199,6 @@ namespace record_replay
                                                   llvm::BasicBlock::iterator I,
                                                   const visible_instruction_t& instr)
    {
-      PRINTF("\t\t" << outputname(), "wrap_visible_instruction", "", "\n");
       llvm::CallInst::Create(
          mFunctions.Wrapper_post_task(),
          {
@@ -218,7 +216,7 @@ namespace record_replay
     
    void LightWeightPass::add_thread_finished(llvm::Module& M, llvm::BasicBlock::iterator I)
    {
-      PRINTF("\t\t" << outputname(), "add_thread_finished", "", "\n");
+      PRINTF(outputname(), "add_thread_finished", "", "\n");
       llvm::CallInst::Create(mFunctions.Wrapper_finish(), { mScheduler }, "", I);
    }
    

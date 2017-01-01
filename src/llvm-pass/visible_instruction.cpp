@@ -49,8 +49,6 @@ namespace record_replay
    llvm::Value* shared_object::construct_model(llvm::Module& module, llvm::Instruction* before) const
    {
       using namespace utils::io;
-      PRINT(text_color("shared_object::construct_model()", Color::YELLOW) << "\n");
-      
       using instrumentation_utils::get_mangled_name;
       const static auto mangled_name = get_mangled_name(module, "program_model", "", "llvm_object");
       if (mangled_name)
@@ -77,18 +75,32 @@ namespace record_replay
    
    //-------------------------------------------------------------------------------------
    
+   void shared_object::dump() const
+   {
+      llvm::errs() << m_gvar->getName() << "\n";
+      for (const auto& index : m_indices)
+      {
+         index->dump();
+      }
+   }
+   
+   //-------------------------------------------------------------------------------------
+   
    opt_visible_instruction_t get_visible_instruction(llvm::Instruction* instr)
    {
+      instr->dump();
       visible_operation_creator operation_creator;
       auto visible_operation = operation_creator.visit(instr);
       if (visible_operation)
       {
          using namespace utils::io;
-         PRINT("-----\n" << text_color(to_string(visible_operation->first), Color::GREEN) << "\n");
          auto shared_object = get_shared_object(visible_operation->second);
-         PRINT("-----\n");
          if (shared_object)
          {
+            PRINT("-----\n");
+            PRINT(text_color(to_string(visible_operation->first), Color::GREEN) << "\n");
+            shared_object->dump();
+            PRINT("-----\n");
             return boost::make_optional(visible_instruction_t(visible_operation->first, *shared_object));
          }
       }
@@ -108,11 +120,6 @@ namespace record_replay
          // GlobalVariable
          if (llvm::GlobalVariable* gvar = llvm::dyn_cast<llvm::GlobalVariable>(operand))
          {
-            PRINT(text_color("GlobalVariable=", Color::GREEN) << gvar->getName() << "\n");
-            for (const auto& index : indices)
-            {
-               index->dump();
-            }
             return boost::make_optional(shared_object(gvar, indices));
          }
          
@@ -138,14 +145,12 @@ namespace record_replay
          // Add indices to the deque
          if (user && user->getNumOperands() > 1)
          {
-            PRINT(text_color("GEP pointer_op=", Color::GREEN)); operand->dump();
             auto begin = user->op_begin();
             ++begin;
             std::reverse_copy(begin, user->op_end(), std::front_inserter(indices));
          }
          else
          {
-            PRINT(text_color("unhandled", Color::RED) << "\n");
             return boost::optional<shared_object>();
          }
       }
@@ -169,9 +174,10 @@ namespace record_replay
    
    //-------------------------------------------------------------------------------------
    
-   auto visible_operation_creator::visitAtomicCmpXchgInst(llvm::AtomicCmpXchgInst& instr) -> return_type
+   auto visible_operation_creator::visitAtomicRMWInst(llvm::AtomicRMWInst& instr) -> return_type
    {
-      PRINT("AtomicCompareExchange\n");
+//      return boost::make_optional(visible_operation_t(program_model::Object::Op::AtomicRMW,
+//                                                      instr.getPointerOperand()));
       return return_type();
    }
    
@@ -181,7 +187,7 @@ namespace record_replay
    {
       using Op = program_model::Object::Op;
       llvm::Function* callee = instr.getCalledFunction();
-      
+   
       if (callee->getName() == "pthread_mutex_lock")
       {
          return boost::make_optional(visible_operation_t(Op::LOCK, instr.getArgOperand(0)));
@@ -190,7 +196,6 @@ namespace record_replay
       {
          return boost::make_optional(visible_operation_t(Op::UNLOCK, instr.getArgOperand(0)));
       }
-      
       return return_type();
    }
    
@@ -198,11 +203,6 @@ namespace record_replay
    
    auto visible_operation_creator::visitInstruction(llvm::Instruction& instr) -> return_type
    {
-      if (!llvm::isa<llvm::AllocaInst>(instr))
-      {
-         PRINT(utils::io::text_color("unhandled", utils::io::Color::RED));
-      }
-      instr.dump();
       return return_type();
    }
    
