@@ -42,7 +42,7 @@ pass:
 	for file in debug error color_output container_format container_input container_io container_output utils_io; do \
 		cp $(utils_src)/$$file.* $(PASSSRC)/$(passdir); \
 	done
-	for file in object object_io; do \
+	for file in object object_io visible_instruction visible_instruction_io; do \
 		cp $(program_model_src)/$$file.* $(PASSSRC)/$(passdir); \
 	done
 	make --directory=$(PASSBUILD)/$(passdir)

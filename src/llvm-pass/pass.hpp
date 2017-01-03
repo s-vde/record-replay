@@ -2,7 +2,7 @@
 
 // LLVM_PASS
 #include "functions.hpp"
-#include "visible_instruction.hpp"
+#include "llvm_visible_instruction.hpp"
 
 // LLVM
 #include <llvm/IR/BasicBlock.h>

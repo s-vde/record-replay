@@ -20,6 +20,16 @@ namespace scheduler
    {
       //----------------------------------------------------------------------------------
       
+      bool is_a_memory_operation(const program_model::Object::Op& operation)
+      {
+         return
+            static_cast<int>(operation) == 0 ||
+            static_cast<int>(operation) == 1 ||
+            static_cast<int>(operation) == 5;
+      }
+      
+      //----------------------------------------------------------------------------------
+      
       vector_t get_data_races(const object_state& object, const instruction_t& instr)
       {
          auto convert_to_race = [&instr] (const auto& entry)
@@ -27,13 +37,17 @@ namespace scheduler
             return data_race::type{entry.second, instr};
          };
          vector_t data_races;
-         if (instr.op() == program_model::Object::Op::WRITE)
+         if (is_a_memory_operation(instr.op()))
          {
-            std::transform(object.begin(0), object.end(0), std::back_inserter(data_races),
-                           convert_to_race);
+            if (instr.op() == program_model::Object::Op::WRITE ||
+                instr.op() == program_model::Object::Op::RMW)
+            {
+               std::transform(object.begin(0), object.end(0), std::back_inserter(data_races),
+                              convert_to_race);
+            }
+            std::transform(object.begin(1), object.end(1), std::back_inserter(data_races),
+                            convert_to_race);
          }
-         std::transform(object.begin(1), object.end(1), std::back_inserter(data_races),
-                        convert_to_race);
          return data_races;
       }
       

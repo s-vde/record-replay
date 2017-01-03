@@ -18,6 +18,7 @@ namespace program_model
       {
          case Object::Op::READ   : return "READ";
          case Object::Op::WRITE  : return "WRITE";
+         case Object::Op::RMW    : return "RMW";
          case Object::Op::LOCK   : return "LOCK";
          case Object::Op::UNLOCK : return "UNLOCK";
       }
@@ -39,10 +40,18 @@ namespace program_model
       is >> str;
       if (str == "READ")          { op = Object::Op::READ;    }
       else if (str == "WRITE")    { op = Object::Op::WRITE;   }
+      else if (str == "RMW")      { op = Object::Op::RMW;     }
       else if (str == "LOCK")     { op = Object::Op::LOCK;    }
       else if (str == "UNLOCK")   { op = Object::Op::UNLOCK;  }
       else { is.setstate(std::ios::failbit); }
       return is;
+   }
+   
+   //-------------------------------------------------------------------------------------
+   
+   std::string to_string(const Object& obj)
+   {
+      return to_pretty_string(obj);
    }
    
    //-------------------------------------------------------------------------------------

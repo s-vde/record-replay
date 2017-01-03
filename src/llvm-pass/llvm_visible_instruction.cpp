@@ -1,12 +1,12 @@
 
-#include "visible_instruction.hpp"
+#include "llvm_visible_instruction.hpp"
 
 // LLVM_PASS
 #include "instrumentation_utils.hpp"
 #include "print.hpp"
 
 // PROGRAM_MODEL
-#include "object_io.hpp"
+#include "visible_instruction_io.hpp"
 
 // UTILS
 #include "color_output.hpp"
@@ -14,9 +14,11 @@
 // LLVM
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
+#include <llvm/Support/raw_ostream.h>
 
 // STL
 #include <algorithm>
+#include <assert.h>
 
 namespace record_replay
 {
@@ -42,6 +44,7 @@ namespace record_replay
       }
       using namespace utils::io;
       PRINT(text_color("unhandled index case\n", Color::RED));
+      return nullptr;
    }
    
    //-------------------------------------------------------------------------------------
@@ -86,29 +89,39 @@ namespace record_replay
    
    //-------------------------------------------------------------------------------------
    
-   opt_visible_instruction_t get_visible_instruction(llvm::Instruction* instr)
+   namespace
    {
-      instr->dump();
-      visible_operation_creator operation_creator;
-      auto visible_operation = operation_creator.visit(instr);
-      if (visible_operation)
+      template <typename operation_t>
+      void dump_base(const visible_instruction<operation_t>& instruction)
       {
          using namespace utils::io;
-         auto shared_object = get_shared_object(visible_operation->second);
-         if (shared_object)
-         {
-            PRINT("-----\n");
-            PRINT(text_color(to_string(visible_operation->first), Color::GREEN) << "\n");
-            shared_object->dump();
-            PRINT("-----\n");
-            return boost::make_optional(visible_instruction_t(visible_operation->first, *shared_object));
-         }
+         llvm::errs() << text_color(to_string(instruction.operation()), Color::GREEN) << "\n";
+         instruction.operand().dump();
       }
-      return boost::optional<visible_instruction_t>();
+      
+   } // end namespace
+   
+   //-------------------------------------------------------------------------------------
+   
+   void dump::operator()(const memory_instruction& instruction) const
+   {
+      using namespace utils::io;
+      if (instruction.is_atomic())
+      {
+         llvm::errs() << text_color("atomic ", Color::GREEN);
+      }
+      dump_base(instruction);
    }
    
    //-------------------------------------------------------------------------------------
-    
+   
+   void dump::operator()(const lock_instruction& instruction) const
+   {
+      dump_base(instruction);
+   }
+   
+   //-------------------------------------------------------------------------------------
+   
    boost::optional<shared_object> get_shared_object(llvm::Value* operand)
    {
       using namespace utils::io;
@@ -158,51 +171,76 @@ namespace record_replay
    
    //-------------------------------------------------------------------------------------
    
-   auto visible_operation_creator::visitLoadInst(llvm::LoadInst& instr) -> return_type
+   namespace
    {
-      return boost::make_optional(visible_operation_t(program_model::Object::Op::READ,
-                                                      instr.getPointerOperand()));
+      using return_type = visible_instruction_creator::return_type;
+      
+      template <typename instruction_t, typename ... args_t>
+      return_type create(const typename instruction_t::operation_t& operation, llvm::Value* value, args_t&& ... args)
+      {
+         auto shared_object = get_shared_object(value);
+         if (shared_object)
+         {
+            return return_type(instruction_t(operation, *shared_object, std::forward<args_t>(args) ...));
+         }
+         return return_type();
+      }
+      
+   } // end namespace
+   
+   //-------------------------------------------------------------------------------------
+   
+   using memory_operation = program_model::memory_operation;
+   using lock_operation = program_model::lock_operation;
+   
+   //-------------------------------------------------------------------------------------
+   
+   auto visible_instruction_creator::visitLoadInst(llvm::LoadInst& instr) -> return_type
+   {
+      instr.dump();
+      return create<memory_instruction>(memory_operation::Load, instr.getPointerOperand(), instr.isAtomic());
    }
    
    //-------------------------------------------------------------------------------------
    
-   auto visible_operation_creator::visitStoreInst(llvm::StoreInst& instr) -> return_type
+   auto visible_instruction_creator::visitStoreInst(llvm::StoreInst& instr) -> return_type
    {
-      return boost::make_optional(visible_operation_t(program_model::Object::Op::WRITE,
-                                                      instr.getPointerOperand()));
+      instr.dump();
+      return create<memory_instruction>(memory_operation::Store, instr.getPointerOperand(), instr.isAtomic());
    }
    
    //-------------------------------------------------------------------------------------
    
-   auto visible_operation_creator::visitAtomicRMWInst(llvm::AtomicRMWInst& instr) -> return_type
+   auto visible_instruction_creator::visitAtomicRMWInst(llvm::AtomicRMWInst& instr) -> return_type
    {
-//      return boost::make_optional(visible_operation_t(program_model::Object::Op::AtomicRMW,
-//                                                      instr.getPointerOperand()));
-      return return_type();
+      instr.dump();
+      assert(instr.isAtomic());
+      return create<memory_instruction>(memory_operation::ReadModifyWrite, instr.getPointerOperand(), true);
    }
    
    //-------------------------------------------------------------------------------------
    
-   auto visible_operation_creator::visitCallInst(llvm::CallInst& instr) -> return_type
+   auto visible_instruction_creator::visitCallInst(llvm::CallInst& instr) -> return_type
    {
-      using Op = program_model::Object::Op;
+      instr.dump();
+      
       llvm::Function* callee = instr.getCalledFunction();
-   
       if (callee->getName() == "pthread_mutex_lock")
       {
-         return boost::make_optional(visible_operation_t(Op::LOCK, instr.getArgOperand(0)));
+         return create<lock_instruction>(lock_operation::Lock, instr.getArgOperand(0));
       }
       else if (callee->getName() == "pthread_mutex_unlock")
       {
-         return boost::make_optional(visible_operation_t(Op::UNLOCK, instr.getArgOperand(0)));
+         return create<lock_instruction>(lock_operation::Unlock, instr.getArgOperand(0));
       }
       return return_type();
    }
    
    //-------------------------------------------------------------------------------------
    
-   auto visible_operation_creator::visitInstruction(llvm::Instruction& instr) -> return_type
+   auto visible_instruction_creator::visitInstruction(llvm::Instruction& instr) -> return_type
    {
+      instr.dump();
       return return_type();
    }
    

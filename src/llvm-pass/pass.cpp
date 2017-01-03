@@ -4,7 +4,6 @@
 // LLVM_PASS
 #include "instrumentation_utils.hpp"
 #include "print.hpp"
-#include "visible_instruction.hpp"
 
 // UTILS
 #include "color_output.hpp"
@@ -157,9 +156,14 @@ namespace record_replay
       PRINTF("\n----------\n" << outputname(), "instrument_function", F->getName(), "\n");
       for (auto instr = llvm::inst_begin(F); instr != llvm::inst_end(F); ++instr)
       {
-         const auto visible_instr = get_visible_instruction(&*instr);
+         visible_instruction_creator creator;
+         const auto visible_instr = creator.visit(&*instr);
          if (visible_instr)
          {
+            using namespace utils::io;
+            PRINT("-----\n");
+            boost::apply_visitor(::record_replay::dump(), *visible_instr);
+            PRINT("-----\n");
             wrap_visible_instruction(M, &*instr, *visible_instr);
          }
          else if (isa_thread_end(F, &*instr))
@@ -203,8 +207,11 @@ namespace record_replay
          mFunctions.Wrapper_post_task(),
          {
             mScheduler,
-            llvm::ConstantInt::get(M.getContext(), llvm::APInt(32, static_cast<int>(instr.first), false)),
-            instr.second.construct_model(M, I)
+            llvm::ConstantInt::get(M.getContext(),
+                                   llvm::APInt(32,
+                                               boost::apply_visitor(program_model::operation_as_int<shared_object>(), instr),
+                                               false)),
+            boost::apply_visitor(construct_model(M, I), instr)
          },
          "",
          I
