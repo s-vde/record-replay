@@ -156,7 +156,7 @@ namespace record_replay
       PRINTF("\n----------\n" << outputname(), "instrument_function", F->getName(), "\n");
       for (auto instr = llvm::inst_begin(F); instr != llvm::inst_end(F); ++instr)
       {
-         visible_instruction_creator creator;
+         llvm_visible_instruction::creator creator;
          const auto visible_instr = creator.visit(&*instr);
          if (visible_instr)
          {

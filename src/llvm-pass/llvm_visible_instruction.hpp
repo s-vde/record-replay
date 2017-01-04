@@ -104,18 +104,25 @@ namespace record_replay
    
    //-------------------------------------------------------------------------------------
    
-   struct visible_instruction_creator
-   : public llvm::InstVisitor<visible_instruction_creator, boost::optional<visible_instruction_t>>
+   namespace llvm_visible_instruction
    {
-      using return_type = boost::optional<visible_instruction_t>;
-
-      return_type visitLoadInst(llvm::LoadInst& instr);
-      return_type visitStoreInst(llvm::StoreInst& instr);
-      return_type visitAtomicRMWInst(llvm::AtomicRMWInst& instr);
-      return_type visitCallInst(llvm::CallInst& instr);
-      return_type visitInstruction(llvm::Instruction& instr);
+      struct creator
+      : public llvm::InstVisitor<creator, boost::optional<visible_instruction_t>>
+      {
+         using return_type = boost::optional<visible_instruction_t>;
+         
+         // Potential Visible Instructions
+         return_type visitLoadInst(llvm::LoadInst& instr);
+         return_type visitStoreInst(llvm::StoreInst& instr);
+         return_type visitAtomicRMWInst(llvm::AtomicRMWInst& instr);
+         return_type visitCallInst(llvm::CallInst& instr);
+         
+         // Default
+         return_type visitInstruction(llvm::Instruction& instr);
+         
+      }; // end struct creator
       
-   }; // end struct visible_instruction_creator;
+   } // end namesapce llvm_visible_instruction
    
    //-------------------------------------------------------------------------------------
    

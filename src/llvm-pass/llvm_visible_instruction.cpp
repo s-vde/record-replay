@@ -66,7 +66,7 @@ namespace record_replay
          // Construct program_model::Object
          AllocaInst* obj = new AllocaInst(object_type, "obj", before);
          using namespace instrumentation_utils;
-         Value* gvar_name = create_global_cstring_const(module, "", m_gvar->getName().str());
+         Value* gvar_name = create_global_cstring_const(module, "", m_gvar ? m_gvar->getName().str() : "");
          Value* address = new PtrToIntInst(m_value, IntegerType::get(module.getContext(), 32), "", before);
          CallInst::Create(llvm_object, { obj, address, gvar_name }, "", before);
          
@@ -174,80 +174,84 @@ namespace record_replay
    }
    
    //-------------------------------------------------------------------------------------
-   
-   namespace
+
+   namespace llvm_visible_instruction
    {
-      using return_type = visible_instruction_creator::return_type;
+      //----------------------------------------------------------------------------------
       
       template <typename instruction_t, typename ... args_t>
-      return_type create(const typename instruction_t::operation_t& operation, llvm::Value* value, args_t&& ... args)
+      creator::return_type create(const typename instruction_t::operation_t& operation,
+                                  llvm::Value* value,
+                                  args_t&& ... args)
       {
          auto shared_object = get_shared_object(value);
          if (shared_object)
          {
-            return return_type(instruction_t(operation, *shared_object, std::forward<args_t>(args) ...));
+            return creator::return_type(instruction_t(operation, *shared_object, std::forward<args_t>(args) ...));
+         }
+         return creator::return_type();
+      }
+      
+      //----------------------------------------------------------------------------------
+      // creator
+      //----------------------------------------------------------------------------------
+      
+      using memory_operation = program_model::memory_operation;
+      using lock_operation = program_model::lock_operation;
+      
+      //----------------------------------------------------------------------------------
+      
+      auto creator::visitLoadInst(llvm::LoadInst& instr) -> return_type
+      {
+         instr.dump();
+         return create<memory_instruction>(memory_operation::Load, instr.getPointerOperand(), instr.isAtomic());
+      }
+      
+      //----------------------------------------------------------------------------------
+      
+      auto creator::visitStoreInst(llvm::StoreInst& instr) -> return_type
+      {
+         instr.dump();
+         return create<memory_instruction>(memory_operation::Store, instr.getPointerOperand(), instr.isAtomic());
+      }
+      
+      //----------------------------------------------------------------------------------
+      
+      auto creator::visitAtomicRMWInst(llvm::AtomicRMWInst& instr) -> return_type
+      {
+         instr.dump();
+         assert(instr.isAtomic());
+         return create<memory_instruction>(memory_operation::ReadModifyWrite, instr.getPointerOperand(), true);
+      }
+      
+      //----------------------------------------------------------------------------------
+      
+      auto creator::visitCallInst(llvm::CallInst& instr) -> return_type
+      {
+         instr.dump();
+         
+         llvm::Function* callee = instr.getCalledFunction();
+         if (callee->getName() == "pthread_mutex_lock")
+         {
+            return create<lock_instruction>(lock_operation::Lock, instr.getArgOperand(0));
+         }
+         else if (callee->getName() == "pthread_mutex_unlock")
+         {
+            return create<lock_instruction>(lock_operation::Unlock, instr.getArgOperand(0));
          }
          return return_type();
       }
       
-   } // end namespace
-   
-   //-------------------------------------------------------------------------------------
-   
-   using memory_operation = program_model::memory_operation;
-   using lock_operation = program_model::lock_operation;
-   
-   //-------------------------------------------------------------------------------------
-   
-   auto visible_instruction_creator::visitLoadInst(llvm::LoadInst& instr) -> return_type
-   {
-      instr.dump();
-      return create<memory_instruction>(memory_operation::Load, instr.getPointerOperand(), instr.isAtomic());
-   }
-   
-   //-------------------------------------------------------------------------------------
-   
-   auto visible_instruction_creator::visitStoreInst(llvm::StoreInst& instr) -> return_type
-   {
-      instr.dump();
-      return create<memory_instruction>(memory_operation::Store, instr.getPointerOperand(), instr.isAtomic());
-   }
-   
-   //-------------------------------------------------------------------------------------
-   
-   auto visible_instruction_creator::visitAtomicRMWInst(llvm::AtomicRMWInst& instr) -> return_type
-   {
-      instr.dump();
-      assert(instr.isAtomic());
-      return create<memory_instruction>(memory_operation::ReadModifyWrite, instr.getPointerOperand(), true);
-   }
-   
-   //-------------------------------------------------------------------------------------
-   
-   auto visible_instruction_creator::visitCallInst(llvm::CallInst& instr) -> return_type
-   {
-      instr.dump();
+      //----------------------------------------------------------------------------------
       
-      llvm::Function* callee = instr.getCalledFunction();
-      if (callee->getName() == "pthread_mutex_lock")
+      auto creator::visitInstruction(llvm::Instruction& instr) -> return_type
       {
-         return create<lock_instruction>(lock_operation::Lock, instr.getArgOperand(0));
+         instr.dump();
+         return return_type();
       }
-      else if (callee->getName() == "pthread_mutex_unlock")
-      {
-         return create<lock_instruction>(lock_operation::Unlock, instr.getArgOperand(0));
-      }
-      return return_type();
-   }
-   
-   //-------------------------------------------------------------------------------------
-   
-   auto visible_instruction_creator::visitInstruction(llvm::Instruction& instr) -> return_type
-   {
-      instr.dump();
-      return return_type();
-   }
-   
-   //-------------------------------------------------------------------------------------
+      
+      //----------------------------------------------------------------------------------
+      
+   } // end namespace llvm_visible_instruction
    
 } // end namespace record_replay
