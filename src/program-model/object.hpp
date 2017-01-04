@@ -19,6 +19,7 @@ namespace program_model
    {
    public:
       
+      using ptr_t = std::uint32_t;
       using indices_t = std::vector<int>;
       
       //----------------------------------------------------------------------------------
@@ -30,7 +31,7 @@ namespace program_model
       /// @brief Constructor.
       /// @note Default arguments construct dummy Object.
       
-      explicit Object(std::string gvar="", const indices_t& indices={});
+      explicit Object(ptr_t address=0, std::string gvar="", const indices_t& indices={});
       
       //----------------------------------------------------------------------------------
         
@@ -52,6 +53,7 @@ namespace program_model
         
       //----------------------------------------------------------------------------------
       
+      std::uintptr_t m_address;
       std::string mVar;
       indices_t mIndices;
       
@@ -67,7 +69,7 @@ namespace program_model
    
    //-------------------------------------------------------------------------------------
 	
-	Object llvm_object(const char* gvar, const int index=0);
+   Object llvm_object(Object::ptr_t address, const char* gvar, const int index=0);
    
    //-------------------------------------------------------------------------------------
 	

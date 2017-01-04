@@ -6,7 +6,9 @@
 #include "utils_io.hpp"
 
 // STL
+#include <iomanip>
 #include <iostream>
+#include <sstream>
 
 namespace program_model
 {
@@ -58,26 +60,24 @@ namespace program_model
     
    std::string to_pretty_string(const Object& obj)
    {
-      std::string str = obj.var();
-      str += "[";
-      str += utils::io::to_string(obj.mIndices);
-      str += "]";
-      return str;
+      std::stringstream stream;
+      stream << obj.var() << " " << obj.mIndices << " " << std::hex << obj.m_address;
+      return stream.str();
    }
    
    //-------------------------------------------------------------------------------------
     
    std::ostream& operator<<(std::ostream& os, const Object& obj)
    {
-      os << obj.var() << " " << obj.mIndices;
+      os << obj.var() << " " << obj.mIndices << " " << std::hex << obj.m_address;
       return os;
    }
    
    //-------------------------------------------------------------------------------------
-    
+   
    std::istream& operator>>(std::istream& is, Object& obj)
    {
-      is >> obj.mVar >> obj.mIndices;
+      is >> obj.mVar >> obj.mIndices >> std::hex >> obj.m_address;
       return is;
    }
    

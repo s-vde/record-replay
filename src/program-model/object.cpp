@@ -7,9 +7,12 @@ namespace program_model
 {
    //-------------------------------------------------------------------------------------
    
-   Object::Object(std::string var, const indices_t& indices)
-   : mVar(var)
-   , mIndices(indices) { }
+   Object::Object(ptr_t address, std::string var, const indices_t& indices)
+   : m_address(address)
+   , mVar(var)
+   , mIndices(indices)
+   {
+   }
    
    //-------------------------------------------------------------------------------------
     
@@ -34,9 +37,9 @@ namespace program_model
    
    //-------------------------------------------------------------------------------------
 	
-   Object llvm_object(const char* gvar)
+   Object llvm_object(Object::ptr_t address, const char* gvar)
    {
-      return Object(gvar);
+      return Object(address, gvar);
    }
    
    //-------------------------------------------------------------------------------------

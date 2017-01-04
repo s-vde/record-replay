@@ -24,9 +24,12 @@ namespace record_replay
 {
    //-------------------------------------------------------------------------------------
    
-   shared_object::shared_object(llvm::GlobalVariable* gvar, const indices_t& indices)
-   : m_gvar(gvar)
-   , m_indices(indices) { }
+   shared_object::shared_object(llvm::Value* value, llvm::GlobalVariable* gvar, const indices_t& indices)
+   : m_value(value)
+   , m_gvar(gvar)
+   , m_indices(indices)
+   {
+   }
    
    //-------------------------------------------------------------------------------------
    
@@ -58,15 +61,17 @@ namespace record_replay
       {
          using namespace llvm;
          static Type* object_type = module.getTypeByName("class.program_model::Object");
-         static Function* add_index = cast<Function>(module.getFunction("_ZN13program_model6Object9add_indexEi"));
          static Function* llvm_object = cast<Function>(module.getFunction(*mangled_name));
          
+         // Construct program_model::Object
          AllocaInst* obj = new AllocaInst(object_type, "obj", before);
-         CallInst::Create(llvm_object,
-                          { obj, instrumentation_utils::create_global_cstring_const(module, "", m_gvar->getName().str()) },
-                          "",
-                          before);
+         using namespace instrumentation_utils;
+         Value* gvar_name = create_global_cstring_const(module, "", m_gvar->getName().str());
+         Value* address = new PtrToIntInst(m_value, IntegerType::get(module.getContext(), 32), "", before);
+         CallInst::Create(llvm_object, { obj, address, gvar_name }, "", before);
          
+         // Add m_indices to constructed program_model::Object
+         static Function* add_index = cast<Function>(module.getFunction("_ZN13program_model6Object9add_indexEi"));
          for (const auto& index : m_indices)
          {
             CallInst::Create(add_index, { obj, integer(module, before, index) }, "", before);
@@ -124,8 +129,7 @@ namespace record_replay
    
    boost::optional<shared_object> get_shared_object(llvm::Value* operand)
    {
-      using namespace utils::io;
-      
+      llvm::Value* original_operand = operand;
       std::deque<llvm::Value*> indices;
       
       while (true)
@@ -133,7 +137,7 @@ namespace record_replay
          // GlobalVariable
          if (llvm::GlobalVariable* gvar = llvm::dyn_cast<llvm::GlobalVariable>(operand))
          {
-            return boost::make_optional(shared_object(gvar, indices));
+            return boost::make_optional(shared_object(original_operand, gvar, indices));
          }
          
          llvm::User* user = nullptr;

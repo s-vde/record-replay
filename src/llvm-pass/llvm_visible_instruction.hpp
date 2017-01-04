@@ -40,7 +40,7 @@ namespace record_replay
       
       /// @brief Constructor.
       
-      shared_object(llvm::GlobalVariable* gvar, const indices_t& indices);
+      shared_object(llvm::Value* value, llvm::GlobalVariable* gvar, const indices_t& indices);
       
       /// @brief Constructs a program_model::Object from this shared_object before
       /// llvm::Instruction before and returns a pointer to it.
@@ -51,6 +51,7 @@ namespace record_replay
       
    private:
       
+      llvm::Value* m_value;
       llvm::GlobalVariable* m_gvar;
       indices_t m_indices;
       
