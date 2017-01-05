@@ -53,6 +53,12 @@ instrument: instrument_dir scheduler
 	$(LLVMBIN)/opt -S -load $(PASSLIB)/$(passfile) $(passname) < $(instrument_dir)/$(PROGRAM).linked.bc > $(instrument_dir)/$(PROGRAM).instrumented.bc
 	$(CLANGXX) $(instrument_dir)/$(PROGRAM).instrumented.bc -o $(instrument_dir)/$(PROGRAM) -pthread -std=c++14 
 
+instrument_cpp: instrument_dir scheduler
+	$(CLANGXX) -pthread -emit-llvm -std=c++14 $(CLANGPPFLAGS) -c $(DIR)/$(PROGRAM).cpp -o $(instrument_dir)/$(PROGRAM).bc;
+	$(LLVMBIN)/llvm-link $(BUILD)/$(scheduler_file) $(instrument_dir)/$(PROGRAM).bc -o $(instrument_dir)/$(PROGRAM).linked.bc;
+	$(LLVMBIN)/opt -S -load $(PASSLIB)/$(passfile) $(passname) < $(instrument_dir)/$(PROGRAM).linked.bc > $(instrument_dir)/$(PROGRAM).instrumented.bc
+	$(CLANGXX) $(instrument_dir)/$(PROGRAM).instrumented.bc -o $(instrument_dir)/$(PROGRAM) -pthread -std=c++14 
+
 instrument_dir:
 	test -d $(instrument_dir) || mkdir $(instrument_dir)
 
