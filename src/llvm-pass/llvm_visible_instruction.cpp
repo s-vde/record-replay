@@ -55,7 +55,7 @@ namespace record_replay
    llvm::Value* shared_object::construct_model(llvm::Module& module, llvm::Instruction* before) const
    {
       using namespace utils::io;
-      using instrumentation_utils::get_mangled_name;
+      using namespace instrumentation_utils;
       const static auto mangled_name = get_mangled_name(module, "program_model", "", "llvm_object");
       if (mangled_name)
       {
@@ -64,10 +64,10 @@ namespace record_replay
          static Function* llvm_object = cast<Function>(module.getFunction(*mangled_name));
          
          // Construct program_model::Object
-         AllocaInst* obj = new AllocaInst(object_type, "obj", before);
-         using namespace instrumentation_utils;
-         Value* gvar_name = create_global_cstring_const(module, "", m_gvar ? m_gvar->getName().str() : "");
-         Value* address = new PtrToIntInst(m_value, IntegerType::get(module.getContext(), 32), "", before);
+         IRBuilder<> builder(before);
+         auto* obj = builder.CreateAlloca(object_type);
+         auto* gvar_name = builder.CreateGlobalStringPtr(m_gvar ? m_gvar->getName().str() : "");
+         auto* address = builder.CreatePointerCast(m_value, builder.getInt8PtrTy());
          CallInst::Create(llvm_object, { obj, address, gvar_name }, "", before);
          
          // Add m_indices to constructed program_model::Object

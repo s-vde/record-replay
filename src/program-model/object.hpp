@@ -19,7 +19,7 @@ namespace program_model
    {
    public:
       
-      using ptr_t = std::uint32_t;
+      using ptr_t = void*;
       using indices_t = std::vector<int>;
       
       //----------------------------------------------------------------------------------
@@ -53,7 +53,7 @@ namespace program_model
         
       //----------------------------------------------------------------------------------
       
-      std::uintptr_t m_address;
+      ptr_t m_address;
       std::string mVar;
       indices_t mIndices;
       

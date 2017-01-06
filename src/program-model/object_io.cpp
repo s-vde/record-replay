@@ -61,7 +61,7 @@ namespace program_model
    std::string to_pretty_string(const Object& obj)
    {
       std::stringstream stream;
-      stream << obj.var() << " " << obj.mIndices << " " << std::hex << obj.m_address;
+      stream << std::hex << obj.m_address;
       return stream.str();
    }
    
@@ -69,15 +69,17 @@ namespace program_model
     
    std::ostream& operator<<(std::ostream& os, const Object& obj)
    {
-      os << obj.var() << " " << obj.mIndices << " " << std::hex << obj.m_address;
+      os << std::hex << obj.m_address;
       return os;
    }
    
    //-------------------------------------------------------------------------------------
    
-   std::istream& operator>>(std::istream& is, Object& obj)
+   std::istream& operator>>(std::istream& is, Object& object)
    {
-      is >> obj.mVar >> obj.mIndices >> std::hex >> obj.m_address;
+      std::uintptr_t ptr;
+      is >> std::hex >> ptr;
+      object.m_address = (void*)ptr;
       return is;
    }
    
