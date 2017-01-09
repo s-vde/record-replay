@@ -38,7 +38,7 @@ namespace scheduler
 
       using Tasks = std::unordered_map<Thread::tid_t,Instruction>;
       using Threads = std::unordered_map<Thread::tid_t,Thread>;
-      using objects_t = std::unordered_map<std::string,object_state>;
+      using objects_t = std::unordered_map<program_model::Object::ptr_t,object_state>;
       
       //----------------------------------------------------------------------------------
         

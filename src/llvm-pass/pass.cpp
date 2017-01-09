@@ -10,7 +10,6 @@
 
 // LLVM
 #include <llvm/IR/InstIterator.h>
-#include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
 
 namespace record_replay
@@ -35,6 +34,7 @@ namespace record_replay
       if (mFunctions.initialize(M))
       {
          auto program_main = create_program_main(M);
+//         mStartRoutines.insert(program_main);
         	restore_main(M);
         	instrument_pthread_create_calls(M, program_main);
         	instrument_start_routines(M);
@@ -44,6 +44,7 @@ namespace record_replay
       {
          PRINT("Scheduler Wrapper functions not found\n");
       }
+      PRINT("nr_instrumented_instructions:\t" << m_nr_instrumented_instructions << "\n");
       return false;
    }
    
@@ -154,9 +155,12 @@ namespace record_replay
                                              const FunctionSet& Done)
    {
       PRINTF("\n----------\n" << outputname(), "instrument_function", F->getName(), "\n");
+      llvm_visible_instruction::creator creator;
       for (auto instr = llvm::inst_begin(F); instr != llvm::inst_end(F); ++instr)
       {
-         llvm_visible_instruction::creator creator;
+         //
+         instr->dump();
+         //
          const auto visible_instr = creator.visit(&*instr);
          if (visible_instr)
          {
@@ -165,6 +169,7 @@ namespace record_replay
             boost::apply_visitor(::record_replay::dump(), *visible_instr);
             PRINT("-----\n");
             wrap_visible_instruction(M, &*instr, *visible_instr);
+            ++m_nr_instrumented_instructions;
          }
          else if (isa_thread_end(F, &*instr))
          {
@@ -209,9 +214,9 @@ namespace record_replay
             mScheduler,
             llvm::ConstantInt::get(M.getContext(),
                                    llvm::APInt(32,
-                                               boost::apply_visitor(program_model::operation_as_int<shared_object>(), instr),
+                                               boost::apply_visitor(program_model::operation_as_int<operand_t>(), instr),
                                                false)),
-            boost::apply_visitor(construct_model(M, I), instr)
+            boost::apply_visitor(construct_operand(M, I), instr)
          },
          "",
          I

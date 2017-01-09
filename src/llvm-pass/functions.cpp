@@ -45,7 +45,7 @@ namespace record_replay
       if (mSucceeded)
       {
          mSucceeded =
-            instrumentation_utils::get_mangled_name(M, "program_model", "", "llvm_object") &&
+            instrumentation_utils::get_mangled_name(M, "program_model", "Object", "C") &&
             M.getTypeByName("class.scheduler::Scheduler") != nullptr &&
             M.getTypeByName("class.program_model::Object") != nullptr;
       }

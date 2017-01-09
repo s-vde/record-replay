@@ -7,10 +7,8 @@ namespace program_model
 {
    //-------------------------------------------------------------------------------------
    
-   Object::Object(ptr_t address, std::string var, const indices_t& indices)
+   Object::Object(ptr_t address)
    : m_address(address)
-   , mVar(var)
-   , mIndices(indices)
    {
    }
    
@@ -18,28 +16,14 @@ namespace program_model
     
    bool Object::operator==(const Object& other) const
    {
-      return mVar == other.mVar && mIndices == other.mIndices;
-   }
-   
-   //-------------------------------------------------------------------------------------
-    
-   const std::string& Object::var() const
-   {
-      return mVar;
+      return m_address == other.m_address;
    }
    
    //-------------------------------------------------------------------------------------
    
-   void Object::add_index(int index)
+   auto Object::address() const -> ptr_t
    {
-      mIndices.push_back(index);
-   }
-   
-   //-------------------------------------------------------------------------------------
-	
-   Object llvm_object(Object::ptr_t address, const char* gvar)
-   {
-      return Object(address, gvar);
+      return m_address;
    }
    
    //-------------------------------------------------------------------------------------

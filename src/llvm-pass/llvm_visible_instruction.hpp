@@ -9,9 +9,6 @@
 // BOOST
 #include <boost/optional.hpp>
 
-// STL
-#include <deque>
-
 //--------------------------------------------------------------------------------------90
 /// @file llvm_visible_instruction.hpp
 /// @author Susanne van den Elsen
@@ -20,7 +17,6 @@
 
 namespace llvm
 {
-   class GlobalVariable;
    class Instruction;
    class Module;
    class Value;
@@ -32,47 +28,22 @@ namespace record_replay
 {
    //-------------------------------------------------------------------------------------
    
-   class shared_object
-   {
-   public:
-      
-      using indices_t = std::deque<llvm::Value*>;
-      
-      /// @brief Constructor.
-      
-      shared_object(llvm::Value* value, llvm::GlobalVariable* gvar, const indices_t& indices);
-      
-      /// @brief Constructs a program_model::Object from this shared_object before
-      /// llvm::Instruction before and returns a pointer to it.
-      
-      llvm::Value* construct_model(llvm::Module& module, llvm::Instruction* before) const;
-      
-      void dump() const;
-      
-   private:
-      
-      llvm::Value* m_value;
-      llvm::GlobalVariable* m_gvar;
-      indices_t m_indices;
-      
-   }; // end class shared_object
-
-   //-------------------------------------------------------------------------------------
+   using operand_t = llvm::Value*;
    
    template <typename operation_t>
-   using visible_instruction = program_model::visible_instruction<operation_t, shared_object>;
+   using visible_instruction = program_model::visible_instruction<operation_t, operand_t>;
    
-   using memory_instruction = program_model::memory_instruction<shared_object>;
+   using memory_instruction = program_model::memory_instruction<operand_t>;
    
-   using lock_instruction = program_model::lock_instruction<shared_object>;
+   using lock_instruction = program_model::lock_instruction<operand_t>;
    
-   using visible_instruction_t = program_model::visible_instruction_t<shared_object>;
+   using visible_instruction_t = program_model::visible_instruction_t<operand_t>;
    
    //-------------------------------------------------------------------------------------
    
-   struct construct_model : public boost::static_visitor<llvm::Value*>
+   struct construct_operand : public boost::static_visitor<llvm::Value*>
    {
-      construct_model(llvm::Module& module, llvm::Instruction* before)
+      construct_operand(llvm::Module& module, llvm::Instruction* before)
       : m_module(module)
       , m_before(before)
       {
@@ -81,13 +52,19 @@ namespace record_replay
       template <typename operation_t>
       llvm::Value* operator()(const visible_instruction<operation_t>& instruction) const
       {
-         return instruction.operand().construct_model(m_module, m_before);
+         return construct_operand_impl(m_module, instruction.operand(), m_before);
       }
+      
+   private:
+      
+      llvm::Value* construct_operand_impl(llvm::Module& module,
+                                          operand_t operand,
+                                          llvm::Instruction* before) const;
       
       llvm::Module& m_module;
       llvm::Instruction* m_before;
       
-   }; // end struct construct_model
+   }; // end struct construct_operand
 
    //-------------------------------------------------------------------------------------
    
@@ -97,10 +74,6 @@ namespace record_replay
       void operator()(const lock_instruction& instruction) const;
       
    }; // end struct dump
-   
-   //-------------------------------------------------------------------------------------
-   
-   boost::optional<shared_object> get_shared_object(llvm::Value* operand);
    
    //-------------------------------------------------------------------------------------
    

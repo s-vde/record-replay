@@ -231,15 +231,15 @@ namespace scheduler
 
    void TaskPool::update_object_post(const Thread::tid_t& tid, const Instruction& task)
    {
-      const std::string name(to_pretty_string(task.obj()));
+      program_model::Object::ptr_t address = task.obj().address();
       std::lock_guard<std::mutex> lock(m_objects_mutex);
       // Create a new object if one with name does not exist in m_objects
-      if (m_objects.find(name) == m_objects.end())
+      if (m_objects.find(address) == m_objects.end())
       {
-         m_objects.insert(std::pair<std::string,object_state>(name, object_state(task.obj())));
+         m_objects.insert(objects_t::value_type(address, object_state(task.obj())));
       }
       // Update m_data_races
-      auto& operand = m_objects.find(name)->second;
+      auto& operand = m_objects.find(address)->second;
       auto data_races = data_race::get_data_races(operand, task);
       std::move(data_races.begin(), data_races.end(), std::back_inserter(m_data_races));
       // Update status of threads operating on same operand
@@ -253,7 +253,7 @@ namespace scheduler
    void TaskPool::update_object_yield(const Instruction& task)
    {
       std::lock_guard<std::mutex> lock(m_objects_mutex);
-      auto obj = m_objects.find(to_pretty_string(task.obj()));
+      auto obj = m_objects.find(task.obj().address());
       /// @pre mLockObs.find(task.obj()) != mLockObs.end()
       assert(obj != m_objects.end());
       obj->second.perform(task.tid());

@@ -145,7 +145,9 @@ namespace record_replay
       std::string outputname() const;
       
       //----------------------------------------------------------------------------------
-        
+      
+      unsigned int m_nr_instrumented_instructions = 0;
+      
    }; // end class LightWeightPass
    
    //-------------------------------------------------------------------------------------
