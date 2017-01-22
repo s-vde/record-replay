@@ -5,7 +5,7 @@
 #include "task_pool.hpp"
 
 // PROGRAM_MODEL
-#include "execution_base.hpp"
+#include "execution.hpp"
 #include "state.hpp"
 
 // UTILS
@@ -30,8 +30,8 @@ namespace scheduler
       
       //----------------------------------------------------------------------------------
       
-      using Status = ExecutionBase::Status;
-      using result_t = std::pair<ExecutionBase::Status,Thread::tid_t>;
+      using Status = Execution::Status;
+      using result_t = std::pair<Execution::Status,Thread::tid_t>;
       
       //----------------------------------------------------------------------------------
       

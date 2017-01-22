@@ -25,8 +25,8 @@ namespace scheduler
       
       //----------------------------------------------------------------------------------
       
-      using Status = program_model::Execution<program_model::State>::Status;
-      using result_t = std::pair<Execution<State>::Status,Thread::tid_t>;
+      using Status = program_model::Execution::Status;
+      using result_t = std::pair<Execution::Status,Thread::tid_t>;
       
       //----------------------------------------------------------------------------------
 

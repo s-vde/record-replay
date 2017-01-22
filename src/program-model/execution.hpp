@@ -1,7 +1,6 @@
 #pragma once
 
 // PROGRAM_MODEL
-#include "execution_base.hpp"
 #include "transition.hpp"
 
 // STL
@@ -11,125 +10,72 @@
 //--------------------------------------------------------------------------------------90
 /// @file execution.hpp
 /// @author Susanne van den Elsen
-/// @date 2015
+/// @date 2015-2017
 //----------------------------------------------------------------------------------------
 
 namespace program_model
 {
    //-------------------------------------------------------------------------------------
    
-   template<typename State> class Execution;
-   template<typename State> std::istream& operator>>(std::istream&, Execution<State>&);
+   using thread_execution_t = std::vector<Instruction>;
    
    //-------------------------------------------------------------------------------------
    
-   template<typename State> class Execution : public ExecutionBase
+   class Execution
    {
    public:
       
       //----------------------------------------------------------------------------------
 		
-      using StatePtr = typename Transition<State>::StatePtr;
+      using index_t = unsigned int;
+      using transition_t = Transition;
+      using execution_t = std::vector<transition_t>;
+      using StatePtr = typename transition_t::StatePtr;
+
+      enum class Status { RUNNING = 0, DONE = 1, DEADLOCK = 2, BLOCKED = 3, ERROR = 4 };
       
       //----------------------------------------------------------------------------------
         
       /// @brief Constructs an empty Execution object with given number of threads.
       
-      explicit Execution(const unsigned int nr_threads, const StatePtr& s0=nullptr)
-      : ExecutionBase(nr_threads)
-      , mExecution()
-      , mS0(s0) { }
+      explicit Execution(const unsigned int nr_threads, const StatePtr& s0=nullptr);
       
       //----------------------------------------------------------------------------------
 
       /// @brief Subscript operator.
       /// @note Indexing starts at 1.
 
-      Transition<State>& operator[](const index_t index)
-      {
-         return mExecution[index-1];
-      }
+      transition_t& operator[](const index_t index);
       
       //----------------------------------------------------------------------------------
       
       /// @brief Subscript operator.
       /// @note Indexing starts at 1.
       
-      const Transition<State>& operator[](const index_t index) const
-      {
-         return mExecution[index-1];
-      }
+      const transition_t& operator[](const index_t index) const;
       
       //----------------------------------------------------------------------------------
         
-      auto begin()
-      {
-         return mExecution.begin();
-      }
-      
-      //----------------------------------------------------------------------------------
-        
-      const auto begin() const
-      {
-         return mExecution.begin();
-      }
-      
-      //----------------------------------------------------------------------------------
-        
-      auto end()
-      {
-         return mExecution.end();
-      }
-      
-      //----------------------------------------------------------------------------------
-        
-      const auto end() const
-      {
-         return mExecution.end();
-      }
+      execution_t::iterator begin();
+      execution_t::const_iterator begin() const;
+      execution_t::iterator end();
+      execution_t::const_iterator end() const;
       
       //----------------------------------------------------------------------------------
         
       /// @brief Getter.
         
-      const State& s0() const
-      {
-         /// @pre initialized()
-         assert(initialized());
-         return *mS0;
-      }
+      const State& s0() const;
+      void set_s0(const StatePtr& s0);
       
       //----------------------------------------------------------------------------------
       
-      /// @brief Setter.
-        
-      void set_s0(const StatePtr& s0)
-      {
-         mS0 = s0;
-      }
-      
-      //----------------------------------------------------------------------------------
-      
-      /// @brief Getter.
-      
-      size_t size() const
-      {
-         return mExecution.size();
-      }
-      
-      //----------------------------------------------------------------------------------
-        
-      bool empty() const
-      {
-         return mExecution.empty();
-      }
+      size_t size() const;
+      bool empty() const;
       
       //----------------------------------------------------------------------------------
 
-      bool initialized() const
-      {
-         return mS0 != nullptr;
-      }
+      bool initialized() const;
       
       //----------------------------------------------------------------------------------
         
@@ -137,77 +83,57 @@ namespace program_model
       /// and does not throw an exception. In the current implementation there is an
       /// assertion in place.
 
-      Transition<State>& last()
-      {
-         /// @pre !empty()
-         assert(!empty());
-         return mExecution.back();
-      }
-      
-      //----------------------------------------------------------------------------------
-      
-      const Transition<State>& last() const
-      {
-         /// @pre !empty()
-         assert(!empty());
-         return mExecution.back();
-      }
+      transition_t& last();
+      const transition_t& last() const;
       
       //----------------------------------------------------------------------------------
         
       // #todo Assertion should be trivial when s0 is a required argument to
       // Execution's constructor.
-      State& final()
-      {
-         if (!empty())
-         {
-            return last().post();
-         }
-         /// @pre !empty() || initialized()
-         assert(initialized());
-         return *mS0;
-      }
-      
-      //----------------------------------------------------------------------------------
-        
-      const State& final() const
-      {
-         if (!empty())
-         {
-            return last().post();
-         }
-         /// @pre !empty() || initialized()
-         assert(initialized());
-         return *mS0;
-      }
+      State& final();
+      const State& final() const;
       
       //----------------------------------------------------------------------------------
         
       // #todo Assertion should be trivial when s0 is a required argument to
       // Execution's constructor.
-      void push_back(const Instruction& instr, const StatePtr& post)
-      {
-         /// @pre !empty() || initialized()
-         assert(!empty() || initialized());
-         mExecution.emplace_back(size()+1, final_ptr(), instr, post);
-			if (is_lock_access(instr))
-         {
-            set_contains_locks();
-         }
-      }
+      void push_back(const Instruction& instr, const StatePtr& post);
       
       //----------------------------------------------------------------------------------
 
       /// @note The popped Transition t still has (valid) pointers to t.pre and t.post.
 
-      Transition<State> pop_last()
-      {
-         /// @pre !empty()
-         assert(!empty());
-         Transition<State> t = mExecution.back();
-         mExecution.pop_back();
-         return t;
-      }
+      transition_t pop_last();
+      
+      //----------------------------------------------------------------------------------
+      
+      /// @brief Getter.
+      
+      unsigned nr_threads() const;
+      
+      //----------------------------------------------------------------------------------
+      
+      /// @brief Getter.
+      
+      const Status& status() const;
+      
+      //----------------------------------------------------------------------------------
+      
+      /// @brief Setter.
+      
+      void set_status(const Status& status);
+      
+      //----------------------------------------------------------------------------------
+      
+      /// @brief Getter.
+      
+      bool contains_locks() const;
+      
+      //----------------------------------------------------------------------------------
+      
+      /// @brief Setter.
+      
+      void set_contains_locks();
       
       //----------------------------------------------------------------------------------
         
@@ -216,34 +142,29 @@ namespace program_model
       //----------------------------------------------------------------------------------
       
       /// @brief Modeling a sequence of Transition objects.
-
-      std::vector<Transition<State>> mExecution;
+      execution_t mExecution;
       
-      //----------------------------------------------------------------------------------
-        
       /// @brief Pointer to the initial State of the Execution.
-
       StatePtr mS0;
+      
+      /// @brief The number of threads in the program to which this Execution belongs.
+      unsigned int mNrThreads;
+      
+      /// @brief The (current/termination) status of the Execution object.
+      Status mStatus;
+      
+      bool mContainsLocks;
         
       //----------------------------------------------------------------------------------
         
-      StatePtr final_ptr()
-      {
-         /// @pre !empty() || initialized()
-         assert(!empty() || initialized());
-         if (empty())
-         {
-            return mS0;
-         }
-         return last().post_ptr();
-      }
+      StatePtr final_ptr();
       
       //----------------------------------------------------------------------------------
         
       /// @brief Template specialization for State of
       /// operator>>(istream, Execution<State>) is friend.
       
-      friend std::istream& operator>><>(std::istream&, Execution<State>&);
+      friend std::istream& operator>>(std::istream&, Execution&);
       
       //----------------------------------------------------------------------------------
         

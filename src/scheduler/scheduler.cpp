@@ -3,6 +3,7 @@
 
 // PROGRAM_MODEL
 #include "execution_io.hpp"
+#include "instruction_io.hpp"
 
 // UTILS
 #include "container_io.hpp"
@@ -22,7 +23,7 @@ namespace scheduler
    , mNrRegistered(0)
    , mRegMutex()
    , mRegCond()
-   , mStatus(Execution<State>::Status::RUNNING)
+   , mStatus(Execution::Status::RUNNING)
    , mStatusMutex()
    , mSettings(SchedulerSettings::read_from_file("schedules/settings.txt"))
    , mSelector(selector_factory(mSettings.strategy_tag()))
@@ -146,15 +147,15 @@ namespace scheduler
 
    bool Scheduler::runs_controlled()
    {
-      const Execution<State>::Status s = status();
+      const Execution::Status s = status();
       return
-         s != Execution<State>::Status::BLOCKED &&
-         s != Execution<State>::Status::ERROR;
+         s != Execution::Status::BLOCKED &&
+         s != Execution::Status::ERROR;
    }
    
    //-------------------------------------------------------------------------------------
     
-   Execution<State>::Status Scheduler::status()
+   Execution::Status Scheduler::status()
    {
       std::lock_guard<std::mutex> guard(mStatusMutex);
       return mStatus;
@@ -162,7 +163,7 @@ namespace scheduler
    
    //-------------------------------------------------------------------------------------
     
-   void Scheduler::set_status(const Execution<State>::Status &s)
+   void Scheduler::set_status(const Execution::Status &s)
    {
       std::lock_guard<std::mutex> guard(mStatusMutex);
       mStatus = s;
@@ -199,9 +200,9 @@ namespace scheduler
       wait_all_registered();
       mPool.wait_enabled_collected();
         
-      Execution<State> E(mLocVars->nr_threads(), mPool.program_state());
+      Execution E(mLocVars->nr_threads(), mPool.program_state());
         
-      while (status() == Execution<State>::Status::RUNNING)
+      while (status() == Execution::Status::RUNNING)
       {
          DEBUGNL("---------- [round" << mLocVars->task_nr() << "]");
          if (mLocVars->task_nr() > 0)
@@ -211,7 +212,7 @@ namespace scheduler
          auto selection = mSelector->select(mPool,
                                             mLocVars->schedule(),
                                             mLocVars->task_nr());
-         if (selection.first == Execution<State>::Status::RUNNING)
+         if (selection.first == Execution::Status::RUNNING)
          {
             /// @pre
             assert(selection.second >= 0);
@@ -273,12 +274,12 @@ namespace scheduler
    void Scheduler::report_error(const std::string& what)
    {
       ERROR("Scheduler::report_error", what);
-      set_status(Execution<State>::Status::ERROR);
+      set_status(Execution::Status::ERROR);
    }
    
    //-------------------------------------------------------------------------------------
     
-   void Scheduler::close(Execution<State>& E)
+   void Scheduler::close(Execution& E)
    {
       DEBUGFNL("Scheduler", "close", "", to_string(status()));
       if (!runs_controlled())
@@ -301,7 +302,7 @@ namespace scheduler
    
    //-------------------------------------------------------------------------------------
     
-   void Scheduler::dump_execution(const Execution<State>& E) const
+   void Scheduler::dump_execution(const Execution& E) const
    {
       if (!E.empty())
       {

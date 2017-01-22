@@ -22,4 +22,4 @@
 #
 #===============================================================================
 
-scheduler_srcs_replay	    := program.cpp scheduler_settings.cpp replay.cpp
+scheduler_srcs_replay	    := program.cpp schedule.cpp scheduler_settings.cpp replay.cpp

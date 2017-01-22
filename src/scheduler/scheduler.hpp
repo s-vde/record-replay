@@ -2,6 +2,7 @@
 
 // SCHEDULER
 #include "control.hpp"
+#include "schedule.hpp"
 #include "scheduler_settings.hpp"
 #include "selector_register.hpp"
 
@@ -134,7 +135,7 @@ namespace scheduler
       
       //----------------------------------------------------------------------------------
       
-      Execution<State>::Status mStatus;
+      Execution::Status mStatus;
       std::mutex mStatusMutex;
       
       //----------------------------------------------------------------------------------
@@ -158,11 +159,11 @@ namespace scheduler
       
       //----------------------------------------------------------------------------------
         
-      Execution<State>::Status status();
+      Execution::Status status();
       
       //----------------------------------------------------------------------------------
         
-      void set_status(const Execution<State>::Status&);
+      void set_status(const Execution::Status&);
       
       //----------------------------------------------------------------------------------
         
@@ -196,11 +197,11 @@ namespace scheduler
       
       //----------------------------------------------------------------------------------
         
-      void close(Execution<State>& E);
+      void close(Execution& E);
       
       //----------------------------------------------------------------------------------
         
-      void dump_execution(const Execution<State>& E) const;
+      void dump_execution(const Execution& E) const;
       
       //----------------------------------------------------------------------------------
    
