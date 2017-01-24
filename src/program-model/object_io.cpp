@@ -65,7 +65,7 @@ namespace program_model
     
    std::ostream& operator<<(std::ostream& os, const Object& obj)
    {
-      os << std::hex << obj.m_address;
+      os << std::hex << obj.m_address << std::dec;
       return os;
    }
    
@@ -74,7 +74,7 @@ namespace program_model
    std::istream& operator>>(std::istream& is, Object& object)
    {
       std::uintptr_t ptr;
-      is >> std::hex >> ptr;
+      is >> std::hex >> ptr >> std::dec;
       object.m_address = (void*)ptr;
       return is;
    }
