@@ -9,20 +9,21 @@ the root directory of *record-replay*.
 
 ### Instalation
 
-###### Build LLVM 3.6.2
-The Instrumentation Pass needs to be built in the context of the LLVM Pass Framework and is compliant 
-with LLVM and Clang version 3.6.2. Sources for the LLVM suite, the Clang frontend, and libc++ can
-be downloaded from [the LLVM download page](http://llvm.org/releases/download.html) and a quick setup
-is described at [Getting Started](http://llvm.org/releases/3.6.2/docs/GettingStarted.html). After building
-LLVM and Clang, variables in `Makefile.config` need to be overridden depending on the build location and
-settings.
+###### Build LLVM
+The Instrumentation Pass needs to be built against the LLVM Pass Framework.
+It is tested with LLVM and Clang version 4.0.
+Scripts for downloading/cloning and building the LLVM Suite, the Clang frontend 
+and required tools with the right configuration can be found in the repository
+[llvm-pass-development-scripts](https://github.com/s-vde/llvm-pass-development-scripts).
+After building LLVM, Clang and the required tools, variables in `Makefile.config` need to be 
+overridden depending on the build location and settings.
 
 ###### Build Instrumentation Pass
 In order to make the Instrumentation Pass run
 
 `make pass`
 
-from `[project-root]`. This will build the pass inside the LLVM source tree.
+from `[project-root]`. This will build the pass outside of the LLVM source tree.
 
 ### Instrumenting a program
 In order to instrument an input program, run
