@@ -9,8 +9,9 @@
 #include "color_output.hpp"
 
 // LLVM
-#include <llvm/IR/InstIterator.h>
 #include <llvm/IR/Module.h>
+
+#include <cxxabi.h>
 
 namespace record_replay
 {
@@ -27,7 +28,7 @@ namespace record_replay
    , mScheduler(nullptr) { }
    
    //-------------------------------------------------------------------------------------
-    
+   
    bool LightWeightPass::runOnModule(llvm::Module& M)
    {
       add_scheduler(M);
@@ -82,9 +83,8 @@ namespace record_replay
 
    void LightWeightPass::restore_main(llvm::Module& M)
    {
-      PRINTF(outputname(), "create_main", "", "\n");
+      PRINTF(outputname(), "restore_main", "", "\n");
       llvm::Function* main = M.getFunction("main");
-      // llvm::BasicBlock
       llvm::BasicBlock* BB = llvm::BasicBlock::Create(M.getContext(), "", main, nullptr);
       llvm::CallInst::Create(mFunctions.Scheduler_ctor(), { mScheduler }, "", BB);
       llvm::CallInst::Create(M.getFunction("program_main"), { }, "", BB);
@@ -168,12 +168,12 @@ namespace record_replay
             PRINT("-----\n");
             boost::apply_visitor(::record_replay::dump(), *visible_instr);
             PRINT("-----\n");
-            wrap_visible_instruction(M, &*instr, *visible_instr);
+            wrap_visible_instruction(M, instr, *visible_instr);
             ++m_nr_instrumented_instructions;
          }
          else if (isa_thread_end(F, &*instr))
          {
-            add_thread_finished(M, *instr);
+            add_thread_finished(M, &*instr);
          }
          else
          {
@@ -205,7 +205,7 @@ namespace record_replay
    //-------------------------------------------------------------------------------------
     
    void LightWeightPass::wrap_visible_instruction(llvm::Module& M,
-                                                  llvm::BasicBlock::iterator I,
+                                                  llvm::inst_iterator I,
                                                   const visible_instruction_t& instr)
    {
       llvm::CallInst::Create(
@@ -216,20 +216,20 @@ namespace record_replay
                                    llvm::APInt(32,
                                                boost::apply_visitor(program_model::operation_as_int<operand_t>(), instr),
                                                false)),
-            boost::apply_visitor(construct_operand(M, I), instr)
+            boost::apply_visitor(construct_operand(M, &*I), instr)
          },
          "",
-         I
+         &*I
       );
-      llvm::CallInst::Create(mFunctions.Wrapper_yield(), { mScheduler }, "", ++I);
+      llvm::CallInst::Create(mFunctions.Wrapper_yield(), { mScheduler }, "", &*(++I));
    }
    
    //-------------------------------------------------------------------------------------
     
-   void LightWeightPass::add_thread_finished(llvm::Module& M, llvm::BasicBlock::iterator I)
+   void LightWeightPass::add_thread_finished(llvm::Module& M, llvm::Instruction* instr)
    {
       PRINTF(outputname(), "add_thread_finished", "", "\n");
-      llvm::CallInst::Create(mFunctions.Wrapper_finish(), { mScheduler }, "", I);
+      llvm::CallInst::Create(mFunctions.Wrapper_finish(), { mScheduler }, "", instr);
    }
    
    //-------------------------------------------------------------------------------------

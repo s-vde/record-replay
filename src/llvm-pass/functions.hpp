@@ -37,7 +37,7 @@ namespace record_replay
         
       //----------------------------------------------------------------------------------
         
-      bool initialize(const llvm::Module& M);
+      bool initialize(llvm::Module& M);
       
       //----------------------------------------------------------------------------------
         
@@ -70,7 +70,7 @@ namespace record_replay
       
       //----------------------------------------------------------------------------------
 
-      void register_wrapper(const llvm::Module& M, const std::string& name);
+      void register_wrapper(llvm::Module& M, const std::string& name);
 		
 		void register_standard(const llvm::Module& M, const std::string& name);
       

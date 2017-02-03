@@ -20,7 +20,7 @@ namespace record_replay
    
    //-------------------------------------------------------------------------------------
    
-   bool Functions::initialize(const llvm::Module& M)
+   bool Functions::initialize(llvm::Module& M)
    {
       mBlackListed = {
          "fflush",
@@ -32,20 +32,19 @@ namespace record_replay
          "pthread_mutex_unlock",
       };
 		
-      register_wrapper(M, "finish");
-      register_wrapper(M, "post_task");
-      register_wrapper(M, "spawn_thread");
-      register_wrapper(M, "wait_registered");
-      register_wrapper(M, "yield");
-      register_wrapper(M, "C1");
-      register_wrapper(M, "D1");
+      register_wrapper(M, "finish()");
+      register_wrapper(M, "post_task(int, program_model::Object const&)");
+      register_wrapper(M, "spawn_thread(_opaque_pthread_t**, _opaque_pthread_attr_t const*, void* (*)(void*), void*)");
+      register_wrapper(M, "wait_registered()");
+      register_wrapper(M, "yield()");
+      register_wrapper(M, "Scheduler()");
+      register_wrapper(M, "~Scheduler()");
 		
       register_standard(M, "pthread_create");
 		
       if (mSucceeded)
       {
          mSucceeded =
-            instrumentation_utils::get_mangled_name(M, "program_model", "Object", "C") &&
             M.getTypeByName("class.scheduler::Scheduler") != nullptr &&
             M.getTypeByName("class.program_model::Object") != nullptr;
       }
@@ -57,35 +56,35 @@ namespace record_replay
 	
    llvm::Function* Functions::Wrapper_finish() const
    {
-      return mWrappers.find("finish")->second;
+      return mWrappers.find("finish()")->second;
    }
    
    //-------------------------------------------------------------------------------------
     
    llvm::Function* Functions::Wrapper_post_task() const
    {
-      return mWrappers.find("post_task")->second;
+      return mWrappers.find("post_task(int, program_model::Object const&)")->second;
    }
    
    //-------------------------------------------------------------------------------------
     
    llvm::Function* Functions::Wrapper_spawn_thread() const
    {
-      return mWrappers.find("spawn_thread")->second;
+      return mWrappers.find("spawn_thread(_opaque_pthread_t**, _opaque_pthread_attr_t const*, void* (*)(void*), void*)")->second;
    }
    
    //-------------------------------------------------------------------------------------
     
    llvm::Function* Functions::Wrapper_wait_registered() const
    {
-      return mWrappers.find("wait_registered")->second;
+      return mWrappers.find("wait_registered()")->second;
    }
    
    //-------------------------------------------------------------------------------------
     
    llvm::Function* Functions::Wrapper_yield() const
    {
-      return mWrappers.find("yield")->second;
+      return mWrappers.find("yield()")->second;
    }
    
    //-------------------------------------------------------------------------------------
@@ -99,14 +98,14 @@ namespace record_replay
 	
    llvm::Function* Functions::Scheduler_ctor() const
    {
-      return mWrappers.find("C1")->second;
+      return mWrappers.find("Scheduler()")->second;
    }
 
    //-------------------------------------------------------------------------------------
    
    llvm::Function* Functions::Scheduler_dtor() const
    {
-      return mWrappers.find("D1")->second;
+      return mWrappers.find("~Scheduler()")->second;
    }
    
    //-------------------------------------------------------------------------------------
@@ -120,16 +119,14 @@ namespace record_replay
    
    //-------------------------------------------------------------------------------------
 	
-   void Functions::register_wrapper(const llvm::Module& M, const std::string& name)
+   void Functions::register_wrapper(llvm::Module& M, const std::string& name)
    {
-      using instrumentation_utils::get_mangled_name;
-      auto mangled = get_mangled_name(M, "scheduler", "Scheduler", name);
-      if (mangled)
+      using namespace instrumentation_utils;
+      llvm::Function* wrapper = get_function_with_unmangled_name(M, "scheduler::Scheduler::" + name);
+      if (wrapper)
       {
-         mWrappers.insert(FunctionMap::value_type(
-            name, llvm::cast<llvm::Function>(M.getFunction(*mangled))
-         ));
-         mBlackListed.insert(*mangled);
+         mWrappers.insert(FunctionMap::value_type(name, wrapper));
+         mBlackListed.insert(wrapper->getName().str());
 		}
       else
       {

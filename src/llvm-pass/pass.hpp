@@ -6,6 +6,7 @@
 
 // LLVM
 #include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/InstIterator.h>
 #include <llvm/Pass.h>
 
 // STL
@@ -127,14 +128,14 @@ namespace record_replay
       /// Wrapper_yield.
 
       void wrap_visible_instruction(llvm::Module&,
-                                    llvm::BasicBlock::iterator,
+                                    llvm::inst_iterator,
                                     const visible_instruction_t&);
       
       //----------------------------------------------------------------------------------
         
       /// @brief Adds a call to Wrapper_finish after I.
 
-      void add_thread_finished(llvm::Module&, llvm::BasicBlock::iterator I);
+      void add_thread_finished(llvm::Module&, llvm::Instruction* instr);
       
       //----------------------------------------------------------------------------------
         

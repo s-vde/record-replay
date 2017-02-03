@@ -14,7 +14,7 @@
 /// @file instrumentation_utils.hpp
 /// @brief Set of utility functions for instrumentation of LLVM IR modules.
 /// @author Susanne van den Elsen
-/// @date 2015
+/// @date 2015-2017
 //----------------------------------------------------------------------------------------
 
 namespace llvm
@@ -40,6 +40,13 @@ namespace instrumentation_utils
    using ValueVec      = std::vector<llvm::Value*>;
    using ConstVec      = std::vector<llvm::Constant*>;
    using CallInstVec   = std::vector<llvm::CallInst*>;
+   
+   //-------------------------------------------------------------------------------------
+   
+   std::string demangle(const std::string& mangled_name);
+   
+   llvm::Function* get_function_with_unmangled_name(llvm::Module& module,
+                                                    const std::string& unmangled_name);
    
    //-------------------------------------------------------------------------------------
     
@@ -92,15 +99,6 @@ namespace instrumentation_utils
                      llvm::Function* callee,
                      llvm::Function* newcallee,
                      ValueVec NewArgs);
-   
-   //-------------------------------------------------------------------------------------
-    
-   /// @brief Creates a new string GlobalVariable initialized with str in module M and
-   /// returns a pointer to it.
-
-   llvm::Constant* create_global_cstring_const(llvm::Module& M,
-                                               const std::string& name,
-                                               const std::string& str);
    
    //-------------------------------------------------------------------------------------
 	

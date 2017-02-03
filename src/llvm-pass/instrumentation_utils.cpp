@@ -12,10 +12,36 @@
 #include <llvm/IR/InstIterator.h>
 #include <llvm/IR/Module.h>
 
-//--------------------------------------------------------------------------------------90
+// STL
+#include <cxxabi.h>
 
 namespace instrumentation_utils
 {
+   //-------------------------------------------------------------------------------------
+   
+   std::string demangle(const std::string& mangled_name)
+   {
+      int status = -1;
+      const char* demangled_name = abi::__cxa_demangle(mangled_name.c_str(), nullptr, nullptr, &status);
+      return (status==0) ? demangled_name : "";
+   }
+   
+   //-------------------------------------------------------------------------------------
+   
+   llvm::Function* get_function_with_unmangled_name(llvm::Module& module,
+                                                    const std::string& unmangled_name)
+   {
+      auto& function_list = module.getFunctionList();
+      for (auto& function : function_list)
+      {
+         if (demangle(function.getName().str()) == unmangled_name)
+         {
+            return &function;
+         }
+      }
+      return nullptr;
+   }
+   
    //-------------------------------------------------------------------------------------
    
    llvm::FunctionType* create_signature(llvm::Function* F, const ParamVec& NewParams)
@@ -53,8 +79,8 @@ namespace instrumentation_utils
          llvm::Function::arg_iterator NA = NewF->arg_begin();
          for (llvm::Function::arg_iterator A = F->arg_begin(); A != F->arg_end(); ++A, ++NA)
          {
-            NA->takeName(A);
-            A->replaceAllUsesWith(NA);
+            NA->takeName(&*A);
+            A->replaceAllUsesWith(&*NA);
          }
          for (const auto& NP : NewParams)
          {
@@ -74,7 +100,8 @@ namespace instrumentation_utils
                                   const std::string& call_name)
    {
       PRINTF(outputname(), "add_call_begin", F->getName() << ", " << callee->getName(), "\n");
-      return llvm::CallInst::Create(callee, args, call_name, F->begin()->begin());
+      llvm::IRBuilder<> builder(&*(llvm::inst_begin(F)));
+      return builder.CreateCall(callee, args, call_name);
    }
    
    //-------------------------------------------------------------------------------------
@@ -85,7 +112,8 @@ namespace instrumentation_utils
                                 const std::string& call_name)
    {
       PRINTF(outputname(), "add_call_end", F->getName() << ", " << callee->getName(), "\n");
-      return llvm::CallInst::Create(callee, args, call_name, --((--(F->end()))->end()));
+      llvm::IRBuilder<> builder(&*(--((--(F->end()))->end())));
+      return builder.CreateCall(callee, args, call_name);
    }
    
    //-------------------------------------------------------------------------------------
@@ -119,42 +147,13 @@ namespace instrumentation_utils
       {
          NewArgs.push_back(call->getArgOperand(i));
       }
-      call->replaceAllUsesWith(
-         llvm::CallInst::Create(
-            newcallee,                              // Func
-            llvm::ArrayRef<llvm::Value*>(NewArgs),  // Args
-            call->getName(),                        // NameStr
-            call                                    // InsertBefore
-         )
-      );
+      llvm::IRBuilder<> builder(call);
+      llvm::CallInst* new_call = builder.CreateCall(newcallee,
+                                                    llvm::ArrayRef<llvm::Value*>(NewArgs),
+                                                    call->getName());
+      call->replaceAllUsesWith(new_call);
       // @todo call->dropAllReferences();?
       call->eraseFromParent();
-   }
-   
-   //-------------------------------------------------------------------------------------
-
-   /// @brief Creates a global C-string constant with given name and initialized with a
-   /// constant array corresponding to given string str.
-   /// @details The type of the llvm::GlobalVariable is an array type [str.size()+1 x i8].
-
-   llvm::Constant* create_global_cstring_const(llvm::Module& M,
-                                               const std::string& name,
-                                               const std::string& str)
-   {
-      llvm::GlobalVariable* gvar = new llvm::GlobalVariable(
-         M,                                                                                  // Module
-         llvm::ArrayType::get(llvm::IntegerType::getInt8Ty(M.getContext()), str.size()+1),   // Type
-         true,                                                                               // isConstant
-         llvm::GlobalValue::PrivateLinkage,                                                  // Linkage
-         llvm::ConstantDataArray::getString(M.getContext(), str, true),                      // Initializer
-         name                                                                                // Name
-      );
-      gvar->setAlignment(1);
-      llvm::ConstantInt* zero = llvm::ConstantInt::get(
-         M.getContext(),
-         llvm::APInt(64, llvm::StringRef("0"), 10)
-      );
-      return llvm::ConstantExpr::getGetElementPtr(gvar, ConstVec{ zero, zero });
    }
    
    //-------------------------------------------------------------------------------------

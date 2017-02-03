@@ -51,7 +51,6 @@ scheduler_deps		   := $(scheduler_objs:.bc=.d)
 $(BUILD)/%.bc: %.cpp
 	@echo Compiling $(notdir $(basename $@)).cpp
 	@$(CLANGXX) \
-	$(CLANGPPFLAGS) \
 	-I $(program_model_src) \
 	-I $(scheduler_src) \
 	-I $(strategies_src) \
