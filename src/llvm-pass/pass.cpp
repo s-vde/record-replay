@@ -11,6 +11,9 @@
 // LLVM
 #include <llvm/IR/Module.h>
 
+// STL
+#include <exception>
+
 #include <cxxabi.h>
 
 namespace record_replay
@@ -31,75 +34,87 @@ namespace record_replay
    
    bool LightWeightPass::runOnModule(llvm::Module& M)
    {
-      add_scheduler(M);
-      if (mFunctions.initialize(M))
+      try
       {
+         add_scheduler(M);
+         mFunctions.initialize(M);
          auto program_main = create_program_main(M);
-//         mStartRoutines.insert(program_main);
+         //         mStartRoutines.insert(program_main);
         	restore_main(M);
-        	instrument_pthread_create_calls(M, program_main);
-        	instrument_start_routines(M);
+        	instrument_pthread_create_calls(program_main);
+        	instrument_start_routines();
         	instrument_functions(M);
-		}
-      else
-      {
-         PRINT("Scheduler Wrapper functions not found\n");
       }
+      catch(const std::invalid_argument& e)
+      {
+         llvm::errs() << e.what() << "\n";
+      }
+      
       PRINT("nr_instrumented_instructions:\t" << m_nr_instrumented_instructions << "\n");
       return false;
    }
    
    //-------------------------------------------------------------------------------------
     
-   void LightWeightPass::add_scheduler(llvm::Module& M)
+   void LightWeightPass::add_scheduler(llvm::Module& module)
    {
-      llvm::Type* scheduler_type = M.getTypeByName("class.scheduler::Scheduler");
-      mScheduler = new llvm::GlobalVariable(
-         M,                                                  // Module
-         scheduler_type,                                     // Type
-         false,                                              // isConstant
-         llvm::GlobalValue::CommonLinkage,                   // Linkage
-         llvm::ConstantAggregateZero::get(scheduler_type),   // Initializer (zeroinitializer)
-         "the_scheduler"                                     // Name
-      );
-      mScheduler->setAlignment(8);
+      llvm::Type* scheduler_type = module.getTypeByName("class.scheduler::Scheduler");
+      if (scheduler_type)
+      {
+         mScheduler = new llvm::GlobalVariable(module,
+                                               scheduler_type,
+                                               // isConstant
+                                               false,
+                                               llvm::GlobalValue::CommonLinkage,
+                                               // Initializer (zeroinitializer)
+                                               llvm::ConstantAggregateZero::get(scheduler_type),
+                                               "the_scheduler");
+         mScheduler->setAlignment(8);
+         return;
+      }
+      throw std::invalid_argument("Type class.scheduler::Scheduler not found in module");
    }
    
    //-------------------------------------------------------------------------------------
     
-   llvm::Function* LightWeightPass::create_program_main(llvm::Module& M)
+   llvm::Function* LightWeightPass::create_program_main(llvm::Module& module)
    {
-      PRINTF(outputname(), "create_program_main", "", "\n");
-      auto main = M.getFunction("main");
-      auto program_main = instrumentation_utils::create_function(M, "program_main", main, {});
-      program_main->getBasicBlockList().splice(
-         program_main->begin(),
-         main->getBasicBlockList()
-      );
-      return program_main;
+      llvm::Function* main = module.getFunction("main");
+      if (main)
+      {
+         auto program_main = instrumentation_utils::create_function(module, "program_main", main, {});
+         program_main->getBasicBlockList().splice(program_main->begin(),
+                                                  main->getBasicBlockList());
+         return program_main;
+      }
+      throw std::invalid_argument("Module does not contain function main");
    }
    
    //-------------------------------------------------------------------------------------
 
-   void LightWeightPass::restore_main(llvm::Module& M)
+   void LightWeightPass::restore_main(llvm::Module& module)
    {
+      using namespace llvm;
+      
       PRINTF(outputname(), "restore_main", "", "\n");
-      llvm::Function* main = M.getFunction("main");
-      llvm::BasicBlock* BB = llvm::BasicBlock::Create(M.getContext(), "", main, nullptr);
-      llvm::CallInst::Create(mFunctions.Scheduler_ctor(), { mScheduler }, "", BB);
-      llvm::CallInst::Create(M.getFunction("program_main"), { }, "", BB);
-      llvm::CallInst::Create(mFunctions.Scheduler_dtor(), { mScheduler }, "", BB);
-      llvm::ReturnInst::Create(
-         M.getContext(),
-         llvm::ConstantInt::get(llvm::IntegerType::getInt32Ty(M.getContext()), 0, true),
-         BB
-      );
-      main->dump();
+      Function* main = module.getFunction("main");
+      if (main)
+      {
+         BasicBlock* BB = BasicBlock::Create(module.getContext(), "", main, nullptr);
+         CallInst::Create(mFunctions.Scheduler_ctor(), { mScheduler }, "", BB);
+         CallInst::Create(module.getFunction("program_main"), { }, "", BB);
+         CallInst::Create(mFunctions.Scheduler_dtor(), { mScheduler }, "", BB);
+         ConstantInt* return_value = ConstantInt::get(IntegerType::getInt32Ty(module.getContext()), 0, true);
+         ReturnInst::Create(module.getContext(), return_value, BB);
+         main->dump();
+         return;
+      }
+      throw std::invalid_argument("Module does not contain function main");
    }
    
    //-------------------------------------------------------------------------------------
 
-   void LightWeightPass::instrument_pthread_create_calls(llvm::Module& M, llvm::Function* program_main)
+   void LightWeightPass::instrument_pthread_create_calls(llvm::Function* program_main)
    {
       PRINTF(outputname(), "instrument_pthread_functions", "", "\n");
       auto PthreadCreateCalls = instrumentation_utils::call_instructions(program_main, "pthread_create");
@@ -118,7 +133,7 @@ namespace record_replay
    
    //-------------------------------------------------------------------------------------
     
-   void LightWeightPass::instrument_start_routines(llvm::Module& M)
+   void LightWeightPass::instrument_start_routines()
    {
       PRINTF(outputname(), "instrument_start_routines", "", "\n");
       for (auto start_routine : mStartRoutines)
@@ -133,7 +148,7 @@ namespace record_replay
    
    //-------------------------------------------------------------------------------------
     
-   void LightWeightPass::instrument_functions(llvm::Module& M)
+   void LightWeightPass::instrument_functions(llvm::Module& module)
    {
       FunctionSet Done{};
       FunctionSet ToInstrument{};
@@ -142,21 +157,21 @@ namespace record_replay
       {
          llvm::Function* F = *(ToInstrument.begin());
          ToInstrument.erase(ToInstrument.begin());
-         instrument_function(M, F, ToInstrument, Done);
+         instrument_function(module, F, ToInstrument, Done);
          Done.insert(F);
       }
    }
    
    //-------------------------------------------------------------------------------------
     
-   void LightWeightPass::instrument_function(llvm::Module& M,
-                                             llvm::Function* F,
+   void LightWeightPass::instrument_function(llvm::Module& module,
+                                             llvm::Function* function,
                                              FunctionSet& ToInstrument,
                                              const FunctionSet& Done)
    {
-      PRINTF("\n----------\n" << outputname(), "instrument_function", F->getName(), "\n");
+      PRINTF("\n----------\n" << outputname(), "instrument_function", function->getName(), "\n");
       llvm_visible_instruction::creator creator;
-      for (auto instr = llvm::inst_begin(F); instr != llvm::inst_end(F); ++instr)
+      for (auto instr = llvm::inst_begin(function); instr != llvm::inst_end(function); ++instr)
       {
          //
          instr->dump();
@@ -168,30 +183,30 @@ namespace record_replay
             PRINT("-----\n");
             boost::apply_visitor(::record_replay::dump(), *visible_instr);
             PRINT("-----\n");
-            wrap_visible_instruction(M, instr, *visible_instr);
+            wrap_visible_instruction(module, instr, *visible_instr);
             ++m_nr_instrumented_instructions;
          }
-         else if (isa_thread_end(F, &*instr))
+         else if (isa_thread_end(function, &*instr))
          {
-            add_thread_finished(M, &*instr);
+            add_thread_finished(&*instr);
          }
          else
          {
-            check_to_be_instrumented(&*instr, F->getName(), ToInstrument, Done);
+            check_to_be_instrumented(&*instr, function->getName(), ToInstrument, Done);
          }
       }
    }
    
    //-------------------------------------------------------------------------------------
     
-   void LightWeightPass::check_to_be_instrumented(llvm::Instruction* I,
+   void LightWeightPass::check_to_be_instrumented(llvm::Instruction* instruction,
                                                   const std::string& fname,
                                                   FunctionSet& ToInstrument,
                                                   const FunctionSet& Done) const
    {
-      if (llvm::CallInst* CI = llvm::dyn_cast<llvm::CallInst>(I))
+      if (llvm::CallInst* call_instruction = llvm::dyn_cast<llvm::CallInst>(instruction))
       {
-         llvm::Function* callee = CI->getCalledFunction();
+         llvm::Function* callee = call_instruction->getCalledFunction();
          if (callee->getName() != fname &&
              Done.find(callee) == Done.end() &&
              !mFunctions.blacklisted(callee))
@@ -204,50 +219,46 @@ namespace record_replay
    
    //-------------------------------------------------------------------------------------
     
-   void LightWeightPass::wrap_visible_instruction(llvm::Module& M,
-                                                  llvm::inst_iterator I,
-                                                  const visible_instruction_t& instr)
+   void LightWeightPass::wrap_visible_instruction(llvm::Module& module,
+                                                  llvm::inst_iterator inst_it,
+                                                  const visible_instruction_t& instruction)
    {
-      llvm::CallInst::Create(
-         mFunctions.Wrapper_post_task(),
-         {
-            mScheduler,
-            llvm::ConstantInt::get(M.getContext(),
-                                   llvm::APInt(32,
-                                               boost::apply_visitor(program_model::operation_as_int<operand_t>(), instr),
-                                               false)),
-            boost::apply_visitor(construct_operand(M, &*I), instr)
-         },
-         "",
-         &*I
-      );
-      llvm::CallInst::Create(mFunctions.Wrapper_yield(), { mScheduler }, "", &*(++I));
+      using namespace boost;
+      using namespace llvm;
+      using namespace program_model;
+      
+      const int operation_int = apply_visitor(operation_as_int<operand_t>(), instruction);
+      ConstantInt* operation = ConstantInt::get(module.getContext(), APInt(32, operation_int, false));
+      llvm::Value* operand = apply_visitor(construct_operand(module, &*inst_it), instruction);
+      CallInst::Create(mFunctions.Wrapper_post_task(),
+                       { mScheduler, operation, operand },
+                       "",
+                       &*inst_it);
+      CallInst::Create(mFunctions.Wrapper_yield(), { mScheduler }, "", &*(++inst_it));
    }
    
    //-------------------------------------------------------------------------------------
     
-   void LightWeightPass::add_thread_finished(llvm::Module& M, llvm::Instruction* instr)
+   void LightWeightPass::add_thread_finished(llvm::Instruction* instruction)
    {
       PRINTF(outputname(), "add_thread_finished", "", "\n");
-      llvm::CallInst::Create(mFunctions.Wrapper_finish(), { mScheduler }, "", instr);
+      llvm::CallInst::Create(mFunctions.Wrapper_finish(), { mScheduler }, "", instruction);
    }
    
    //-------------------------------------------------------------------------------------
     
-   bool LightWeightPass::isa_thread_end(llvm::Function* F, llvm::Instruction* I) const
+   bool LightWeightPass::isa_thread_end(llvm::Function* function, llvm::Instruction* instruction) const
    {
-      if (llvm::isa<llvm::ReturnInst>(I) && mStartRoutines.find(F) != mStartRoutines.end())
+      if (llvm::isa<llvm::ReturnInst>(instruction)
+          && mStartRoutines.find(function) != mStartRoutines.end())
       {
          return true;
       }
-      else if (llvm::CallInst* call = llvm::dyn_cast<llvm::CallInst>(I))
+      else if (llvm::CallInst* call_instruction = llvm::dyn_cast<llvm::CallInst>(instruction))
       {
-         return call->getCalledFunction()->getName() == "pthread_exit";
+         return call_instruction->getCalledFunction()->getName() == "pthread_exit";
       }
-      else
-      {
-         return false;
-      }
+      return false;
    }
    
    //-------------------------------------------------------------------------------------

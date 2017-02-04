@@ -8,21 +8,35 @@
 // LLVM
 #include <llvm/IR/Module.h>
 
+// STL
+#include <exception>
+
 namespace record_replay
 {
-   //-------------------------------------------------------------------------------------
-   
-   Functions::Functions()
-   : mWrappers()
-   , mStandard()
-   , mBlackListed()
- 	, mSucceeded(true) { }
-   
-   //-------------------------------------------------------------------------------------
-   
-   bool Functions::initialize(llvm::Module& M)
+   namespace
    {
-      mBlackListed = {
+      //--------------------------------------------------------------------------------------------
+   
+      void check_type_exists(const llvm::Module& module, const std::string& type_name)
+      {
+         if (module.getTypeByName(type_name) == nullptr)
+         {
+            throw std::invalid_argument("Type " + type_name + " does not exists in module");
+         }
+      }
+      
+      //--------------------------------------------------------------------------------------------
+      
+   } // end namespace
+   
+   Functions::Functions() = default;
+
+   //-----------------------------------------------------------------------------------------------
+   
+   void Functions::initialize(llvm::Module& module)
+   {
+      m_black_listed =
+      {
          "fflush",
          "llvm.memcpy.p0i8.p0i8.i64",
          "malloc",
@@ -32,118 +46,107 @@ namespace record_replay
          "pthread_mutex_unlock",
       };
 		
-      register_wrapper(M, "finish()");
-      register_wrapper(M, "post_task(int, program_model::Object const&)");
-      register_wrapper(M, "spawn_thread(_opaque_pthread_t**, _opaque_pthread_attr_t const*, void* (*)(void*), void*)");
-      register_wrapper(M, "wait_registered()");
-      register_wrapper(M, "yield()");
-      register_wrapper(M, "Scheduler()");
-      register_wrapper(M, "~Scheduler()");
+      register_wrapper(module, "finish()");
+      register_wrapper(module, "post_task(int, program_model::Object const&)");
+      register_wrapper(module, "spawn_thread(_opaque_pthread_t**, _opaque_pthread_attr_t const*, void* (*)(void*), void*)");
+      register_wrapper(module, "wait_registered()");
+      register_wrapper(module, "yield()");
+      register_wrapper(module, "Scheduler()");
+      register_wrapper(module, "~Scheduler()");
 		
-      register_standard(M, "pthread_create");
-		
-      if (mSucceeded)
-      {
-         mSucceeded =
-            M.getTypeByName("class.scheduler::Scheduler") != nullptr &&
-            M.getTypeByName("class.program_model::Object") != nullptr;
-      }
-		
-      return mSucceeded;
+      register_c_function(module, "pthread_create");
+      
+      check_type_exists(module, "class.program_model::Object");
    }
    
-   //-------------------------------------------------------------------------------------
+   //-----------------------------------------------------------------------------------------------
 	
    llvm::Function* Functions::Wrapper_finish() const
    {
-      return mWrappers.find("finish()")->second;
+      return m_wrappers.find("finish()")->second;
    }
    
-   //-------------------------------------------------------------------------------------
+   //-----------------------------------------------------------------------------------------------
     
    llvm::Function* Functions::Wrapper_post_task() const
    {
-      return mWrappers.find("post_task(int, program_model::Object const&)")->second;
+      return m_wrappers.find("post_task(int, program_model::Object const&)")->second;
    }
    
-   //-------------------------------------------------------------------------------------
+   //-----------------------------------------------------------------------------------------------
     
    llvm::Function* Functions::Wrapper_spawn_thread() const
    {
-      return mWrappers.find("spawn_thread(_opaque_pthread_t**, _opaque_pthread_attr_t const*, void* (*)(void*), void*)")->second;
+      return m_wrappers.find("spawn_thread(_opaque_pthread_t**, _opaque_pthread_attr_t const*, void* (*)(void*), void*)")->second;
    }
    
-   //-------------------------------------------------------------------------------------
+   //-----------------------------------------------------------------------------------------------
     
    llvm::Function* Functions::Wrapper_wait_registered() const
    {
-      return mWrappers.find("wait_registered()")->second;
+      return m_wrappers.find("wait_registered()")->second;
    }
    
-   //-------------------------------------------------------------------------------------
+   //-----------------------------------------------------------------------------------------------
     
    llvm::Function* Functions::Wrapper_yield() const
    {
-      return mWrappers.find("yield()")->second;
+      return m_wrappers.find("yield()")->second;
    }
    
-   //-------------------------------------------------------------------------------------
+   //-----------------------------------------------------------------------------------------------
     
    llvm::Function* Functions::Function_pthread_create() const
    {
-      return mStandard.find("pthread_create")->second;
+      return m_c_functions.find("pthread_create")->second;
    }
    
-   //-------------------------------------------------------------------------------------
+   //-----------------------------------------------------------------------------------------------
 	
    llvm::Function* Functions::Scheduler_ctor() const
    {
-      return mWrappers.find("Scheduler()")->second;
+      return m_wrappers.find("Scheduler()")->second;
    }
 
-   //-------------------------------------------------------------------------------------
+   //-----------------------------------------------------------------------------------------------
    
    llvm::Function* Functions::Scheduler_dtor() const
    {
-      return mWrappers.find("~Scheduler()")->second;
+      return m_wrappers.find("~Scheduler()")->second;
    }
    
-   //-------------------------------------------------------------------------------------
+   //-----------------------------------------------------------------------------------------------
     
-   bool Functions::blacklisted(llvm::Function* F) const
+   bool Functions::blacklisted(llvm::Function* function) const
    {
       return
-         mStandard.find(F->getName()) != mStandard.end() ||
-        	mBlackListed.find(F->getName()) != mBlackListed.end();
+         m_c_functions.find(function->getName()) != m_c_functions.end() ||
+        	m_black_listed.find(function->getName()) != m_black_listed.end();
    }
    
-   //-------------------------------------------------------------------------------------
+   //-----------------------------------------------------------------------------------------------
 	
-   void Functions::register_wrapper(llvm::Module& M, const std::string& name)
+   void Functions::register_wrapper(llvm::Module& module, const std::string& wrapper_name)
    {
       using namespace instrumentation_utils;
-      llvm::Function* wrapper = get_function_with_unmangled_name(M, "scheduler::Scheduler::" + name);
-      if (wrapper)
-      {
-         mWrappers.insert(FunctionMap::value_type(name, wrapper));
-         mBlackListed.insert(wrapper->getName().str());
-		}
-      else
-      {
-         mSucceeded = false;
-      }
+      llvm::Function* wrapper = get_function_with_unmangled_name(module, "scheduler::Scheduler::" + wrapper_name);
+      m_wrappers.insert(function_map_t::value_type(wrapper_name, wrapper));
+      m_black_listed.insert(wrapper->getName().str());
    }
    
-   //-------------------------------------------------------------------------------------
+   //-----------------------------------------------------------------------------------------------
 	
-   void Functions::register_standard(const llvm::Module& M, const std::string& name)
+   void Functions::register_c_function(const llvm::Module& module, const std::string& name)
    {
-      mStandard.insert(FunctionMap::value_type(
-         name,
-         llvm::cast<llvm::Function>(M.getFunction(name))
-      ));
+      llvm::Function* function = llvm::cast<llvm::Function>(module.getFunction(name));
+      if (function)
+      {
+         m_c_functions.insert(function_map_t::value_type(name, function));
+         return;
+      }
+      throw std::invalid_argument("C function " + name + " not found in module");
    }
    
-   //-------------------------------------------------------------------------------------
+   //-----------------------------------------------------------------------------------------------
 	
 } // end namespace record_replay

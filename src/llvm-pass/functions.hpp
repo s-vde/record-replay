@@ -5,41 +5,32 @@
 #include <string>
 #include <unordered_map>
 
-//--------------------------------------------------------------------------------------90
+//-----------------------------------------------------------------------------------------------100
 /// @file functions.hpp
 /// @author Susanne van den Elsen
-/// @date 2015
-//----------------------------------------------------------------------------------------
+/// @date 2015-2017
+//--------------------------------------------------------------------------------------------------
 
 namespace llvm
 {
    class Function;
    class Module;
-}
-
-//----------------------------------------------------------------------------------------
+   
+} // end namespace llvm
 
 namespace record_replay
 {
-   //-------------------------------------------------------------------------------------
+   //-----------------------------------------------------------------------------------------------
    
    class Functions
    {
    public:
       
-      //----------------------------------------------------------------------------------
-		
-      using FunctionMap = std::unordered_map<std::string,llvm::Function*>;
-        
-      //----------------------------------------------------------------------------------
+      using function_map_t = std::unordered_map<std::string,llvm::Function*>;
       
       Functions();
-        
-      //----------------------------------------------------------------------------------
-        
-      bool initialize(llvm::Module& M);
       
-      //----------------------------------------------------------------------------------
+      void initialize(llvm::Module& module);
         
       llvm::Function* Wrapper_finish() const;
       llvm::Function* Wrapper_post_task() const;
@@ -47,37 +38,23 @@ namespace record_replay
       llvm::Function* Wrapper_wait_registered() const;
       llvm::Function* Wrapper_yield() const;
       
-      //----------------------------------------------------------------------------------
-      
       llvm::Function* Function_pthread_create() const;
       llvm::Function* Scheduler_ctor() const;
       llvm::Function* Scheduler_dtor() const;
-      
-      //----------------------------------------------------------------------------------
 		
       bool blacklisted(llvm::Function* F) const;
-      
-      //----------------------------------------------------------------------------------
         
    private:
-
-      //----------------------------------------------------------------------------------
       
-      FunctionMap mWrappers;
-      FunctionMap mStandard;
-      std::set<std::string> mBlackListed;
-      bool mSucceeded;
+      void register_wrapper(llvm::Module& module, const std::string& wrapper_name);
+      void register_c_function(const llvm::Module& module, const std::string& name);
       
-      //----------------------------------------------------------------------------------
-
-      void register_wrapper(llvm::Module& M, const std::string& name);
-		
-		void register_standard(const llvm::Module& M, const std::string& name);
-      
-      //----------------------------------------------------------------------------------
+      function_map_t m_wrappers;
+      function_map_t m_c_functions;
+      std::set<std::string> m_black_listed;
 		
    }; // end class Functions
    
-   //-------------------------------------------------------------------------------------
+   //-----------------------------------------------------------------------------------------------
    
 } // end namespace record_replay

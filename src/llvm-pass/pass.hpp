@@ -64,14 +64,14 @@ namespace record_replay
         
       /// @brief Creates a new llvm::GlobalVariable of type Scheduler to llvm::Module M.
       
-      void add_scheduler(llvm::Module& M);
+      void add_scheduler(llvm::Module& module);
       
       //----------------------------------------------------------------------------------
 
       /// @brief Adds a new function named program_main to llvm::Module M with main's body
       /// spliced into it. Returns a pointer to the newly created function.
       
-      llvm::Function* create_program_main(llvm::Module& M);
+      llvm::Function* create_program_main(llvm::Module& module);
       
       //----------------------------------------------------------------------------------
 
@@ -80,7 +80,7 @@ namespace record_replay
       /// @note Assumes that main does not take arguments that need to be forwarded to
       /// program_main.
 
-      void restore_main(llvm::Module&);
+      void restore_main(llvm::Module& module);
       
       //----------------------------------------------------------------------------------
 
@@ -88,18 +88,18 @@ namespace record_replay
       /// Wrapper_spawn_thread(args) and adds the start routine from each call to the set
       /// mStartRoutines.
 
-      void instrument_pthread_create_calls(llvm::Module&, llvm::Function* program_main);
+      void instrument_pthread_create_calls(llvm::Function* program_main);
       
       //----------------------------------------------------------------------------------
 
       /// @brief Adds a call to Wrapper_wait_registered as a first instruction in every
       /// start routine in mStartRoutines.
       
-      void instrument_start_routines(llvm::Module&);
+      void instrument_start_routines();
       
       //----------------------------------------------------------------------------------
         
-      void instrument_functions(llvm::Module&);
+      void instrument_functions(llvm::Module& module);
       
       //----------------------------------------------------------------------------------
 
@@ -107,8 +107,8 @@ namespace record_replay
       /// instructions that are visible and calls add_thread_finished on instructions that
       /// mark a thread's end.
 
-      void instrument_function(llvm::Module&,
-                               llvm::Function* F,
+      void instrument_function(llvm::Module& module,
+                               llvm::Function* function,
                                FunctionSet& ToInstrument,
                                const FunctionSet& Done);
       
@@ -117,7 +117,7 @@ namespace record_replay
       /// @brief Checks whether llvm::Instruction I is an llvm::CallInst whose callee has
       /// to be instrumented. If so, it adds the callee to ToInstrument.
 
-      void check_to_be_instrumented(llvm::Instruction* I,
+      void check_to_be_instrumented(llvm::Instruction* instruction,
                                     const std::string& fname,
                                     FunctionSet& ToInstrument,
                                     const FunctionSet& Done) const;
@@ -127,19 +127,19 @@ namespace record_replay
       /// @brief Wraps a visible instruction between a call to  Wrapper_post_task and
       /// Wrapper_yield.
 
-      void wrap_visible_instruction(llvm::Module&,
-                                    llvm::inst_iterator,
-                                    const visible_instruction_t&);
+      void wrap_visible_instruction(llvm::Module& module,
+                                    llvm::inst_iterator inst_it,
+                                    const visible_instruction_t& instruction);
       
       //----------------------------------------------------------------------------------
         
       /// @brief Adds a call to Wrapper_finish after I.
 
-      void add_thread_finished(llvm::Module&, llvm::Instruction* instr);
+      void add_thread_finished(llvm::Instruction* instruction);
       
       //----------------------------------------------------------------------------------
         
-      bool isa_thread_end(llvm::Function*, llvm::Instruction*) const;
+      bool isa_thread_end(llvm::Function* function, llvm::Instruction* instruction) const;
       
       //----------------------------------------------------------------------------------
       

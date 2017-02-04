@@ -14,6 +14,7 @@
 
 // STL
 #include <cxxabi.h>
+#include <exception>
 
 namespace instrumentation_utils
 {
@@ -36,10 +37,11 @@ namespace instrumentation_utils
       {
          if (demangle(function.getName().str()) == unmangled_name)
          {
+            llvm::errs() << "Function " + unmangled_name + " with mangled name " + function.getName().str() + " found in module\n";
             return &function;
          }
       }
-      return nullptr;
+      throw std::invalid_argument("Function " + unmangled_name + " not found in module");
    }
    
    //-------------------------------------------------------------------------------------
