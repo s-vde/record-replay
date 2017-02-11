@@ -11,8 +11,15 @@
 #include "error.hpp"
 #include "utils_io.hpp"
 
+// STL
+#include <exception>
+
 namespace scheduler
 {
+   //-------------------------------------------------------------------------------------
+   
+   class unregistered_thread : public std::exception {};
+   
    //-------------------------------------------------------------------------------------
    
    Scheduler::Scheduler()
@@ -82,12 +89,19 @@ namespace scheduler
    {
       if (runs_controlled())
       {
-         const Thread::tid_t tid = find_tid(pthread_self());
-         const Instruction instr(tid, static_cast<Object::Op>(op), obj);
-         DEBUGFNL(thread_str(tid), "post_task", instr, "");
-         mPool.post(tid, instr);
-         DEBUGFNL(thread_str(tid), "wait_for_turn", "", "");
-         mControl.wait_for_turn(tid);
+         try
+         {
+            const Thread::tid_t tid = find_tid(pthread_self());
+            const Instruction instr(tid, static_cast<Object::Op>(op), obj);
+            DEBUGFNL(thread_str(tid), "post_task", instr, "");
+            mPool.post(tid, instr);
+            DEBUGFNL(thread_str(tid), "wait_for_turn", "", "");
+            mControl.wait_for_turn(tid);
+         }
+         catch(const unregistered_thread&)
+         {
+            DEBUGFNL("[unregistered_thread]", "post_task", "", "");
+         }
       }
    }
    
@@ -97,9 +111,16 @@ namespace scheduler
    {
       if (runs_controlled())
       {
-         const Thread::tid_t tid = find_tid(pthread_self());
-         DEBUGFNL(thread_str(tid), "yield", "", "");
-         mPool.yield(tid);
+         try
+         {
+            const Thread::tid_t tid = find_tid(pthread_self());
+            DEBUGFNL(thread_str(tid), "yield", "", "");
+            mPool.yield(tid);
+         }
+         catch(const unregistered_thread&)
+         {
+            DEBUGFNL("[unregistered_thread]", "yield", "", "");
+         }
       }
    }
    
@@ -131,16 +152,18 @@ namespace scheduler
    }
    
    //-------------------------------------------------------------------------------------
-
    // SCHEDULER INTERNAL
+   //-------------------------------------------------------------------------------------
     
    Thread::tid_t Scheduler::find_tid(const pthread_t& pid)
    {
       std::lock_guard<std::mutex> guard(mRegMutex);
       auto it = mThreads.find(pid);
-      /// @pre mThreads.find(pid) != mThreads.end()
-      assert(it != mThreads.end());
-      return it->second;
+      if (it != mThreads.end())
+      {
+         return it->second;
+      }
+      throw unregistered_thread();
    }
    
    //-------------------------------------------------------------------------------------

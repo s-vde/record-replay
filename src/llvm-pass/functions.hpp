@@ -17,11 +17,11 @@ namespace llvm
    class Function;
    class FunctionType;
    class Module;
+   class Type;
    
 } // end namespace llvm
 
-namespace record_replay
-{
+namespace concurrency_passes {
    //-----------------------------------------------------------------------------------------------
    
    class Functions
@@ -41,10 +41,8 @@ namespace record_replay
       llvm::Function* Wrapper_yield() const;
       
       llvm::Function* Function_pthread_create() const;
-      llvm::Function* Scheduler_ctor() const;
-      llvm::Function* Scheduler_dtor() const;
 		
-      bool blacklisted(llvm::Function* F) const;
+      bool blacklisted(const llvm::Function* F) const;
         
    private:
       
@@ -54,10 +52,11 @@ namespace record_replay
       
       function_map_t m_wrappers;
       function_map_t m_c_functions;
+      
       std::set<std::string> m_black_listed;
 		
    }; // end class Functions
    
    //-----------------------------------------------------------------------------------------------
    
-} // end namespace record_replay
+} // end namespace concurrency_passes

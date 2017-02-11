@@ -12,10 +12,9 @@
 // STL
 #include <exception>
 
-namespace record_replay
-{
+namespace concurrency_passes {
    //-----------------------------------------------------------------------------------------------
-
+   
    Functions::Functions() = default;
 
    //-----------------------------------------------------------------------------------------------
@@ -146,7 +145,7 @@ namespace record_replay
    
    //-----------------------------------------------------------------------------------------------
     
-   bool Functions::blacklisted(llvm::Function* function) const
+   bool Functions::blacklisted(const llvm::Function* function) const
    {
       return
          m_c_functions.find(function->getName()) != m_c_functions.end() ||
@@ -168,4 +167,4 @@ namespace record_replay
    
    //-----------------------------------------------------------------------------------------------
 	
-} // end namespace record_replay
+} // end namespace concurrency_passes

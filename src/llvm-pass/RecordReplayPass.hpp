@@ -3,32 +3,29 @@
 // LLVM_PASS
 #include "functions.hpp"
 #include "llvm_visible_instruction.hpp"
+#include "VisibleInstructionPass.hpp"
 
 // LLVM
-#include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/InstIterator.h>
-#include <llvm/Pass.h>
 
 // STL
 #include <set>
-#include <vector>
 
 //--------------------------------------------------------------------------------------90
-/// @file pass.hpp
-/// @brief Definition of llvm::ModulePass LightWeightPass.
+/// @file RecordReplayPass.hpp
 /// @author Susanne van den Elsen
-/// @date 2015-2016
+/// @date 2015-2017
 //----------------------------------------------------------------------------------------
 
-namespace record_replay
-{
+namespace concurrency_passes {
    //-------------------------------------------------------------------------------------
    
-   /// @brief An LLVM ModulePass that instruments an LLVM IR module of an input program
-   /// with a Scheduler object and handles that allow the Scheduler to record and/or
-   /// replay the program under a given thread interleaving.
+   /// @brief A VisibleInstructionPass that instruments an LLVM IR module of an input
+   /// program with a Scheduler object and wraps visible instructions in handles that
+   /// allow the Scheduler to record and/or replay the program under a given thread
+   /// interleaving.
    
-   class LightWeightPass : public llvm::ModulePass
+   class LightWeightPass : public VisibleInstructionPass
    {
    public:
       
@@ -44,12 +41,21 @@ namespace record_replay
       
       //----------------------------------------------------------------------------------
       
-      virtual bool runOnModule(llvm::Module& M);
+      void onStartOfPass(llvm::Module& module) override;
+      void runOnVisibleInstruction(llvm::Function& function,
+                                   llvm::inst_iterator inst_it,
+                                   const visible_instruction_t& visible_instruction) override;
+      void runOnThreadExit(llvm::Function& function, llvm::inst_iterator inst_it) override;
+      void onEndOfPass(llvm::Module& module) override;
       
       //----------------------------------------------------------------------------------
         
    private:
-        
+      
+      //----------------------------------------------------------------------------------
+      
+      bool isBlackListed(const llvm::Function& function) const override;
+      
       //----------------------------------------------------------------------------------
         
       using FunctionSet = std::set<llvm::Function*>;
@@ -58,13 +64,6 @@ namespace record_replay
         
       FunctionSet mStartRoutines;
       Functions mFunctions;
-      llvm::GlobalVariable* mScheduler;
-      
-      //----------------------------------------------------------------------------------
-        
-      /// @brief Creates a new llvm::GlobalVariable of type Scheduler to llvm::Module M.
-      
-      void add_scheduler(llvm::Module& module);
       
       //----------------------------------------------------------------------------------
 
@@ -98,59 +97,12 @@ namespace record_replay
       void instrument_start_routines();
       
       //----------------------------------------------------------------------------------
-        
-      void instrument_functions(llvm::Module& module);
-      
-      //----------------------------------------------------------------------------------
-
-      /// @brief Iterates through the instructions of F, calls wrap_visible_instruction on
-      /// instructions that are visible and calls add_thread_finished on instructions that
-      /// mark a thread's end.
-
-      void instrument_function(llvm::Module& module,
-                               llvm::Function* function,
-                               FunctionSet& ToInstrument,
-                               const FunctionSet& Done);
-      
-      //----------------------------------------------------------------------------------
-        
-      /// @brief Checks whether llvm::Instruction I is an llvm::CallInst whose callee has
-      /// to be instrumented. If so, it adds the callee to ToInstrument.
-
-      void check_to_be_instrumented(llvm::Instruction* instruction,
-                                    const std::string& fname,
-                                    FunctionSet& ToInstrument,
-                                    const FunctionSet& Done) const;
-      
-      //----------------------------------------------------------------------------------
-
-      /// @brief Wraps a visible instruction between a call to  Wrapper_post_task and
-      /// Wrapper_yield.
-
-      void wrap_visible_instruction(llvm::Module& module,
-                                    llvm::inst_iterator inst_it,
-                                    const visible_instruction_t& instruction);
-      
-      //----------------------------------------------------------------------------------
-        
-      /// @brief Adds a call to Wrapper_finish after I.
-
-      void add_thread_finished(llvm::Instruction* instruction);
-      
-      //----------------------------------------------------------------------------------
-        
-      bool isa_thread_end(llvm::Function* function, llvm::Instruction* instruction) const;
-      
-      //----------------------------------------------------------------------------------
       
       std::string outputname() const;
       
       //----------------------------------------------------------------------------------
       
-      unsigned int m_nr_instrumented_instructions = 0;
-      
    }; // end class LightWeightPass
    
    //-------------------------------------------------------------------------------------
-   
-} // end namespace record_replay
+} // end namespace concurrency_passes

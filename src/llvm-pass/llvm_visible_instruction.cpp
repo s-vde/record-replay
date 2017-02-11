@@ -19,12 +19,10 @@
 // STL
 #include <assert.h>
 
-namespace record_replay
-{
+namespace concurrency_passes {
    //-------------------------------------------------------------------------------------
    
-   llvm::Value* construct_operand::construct_operand_impl(llvm::Module& module,
-                                                          operand_t operand,
+   llvm::Value* construct_operand::construct_operand_impl(operand_t operand,
                                                           llvm::Instruction* before) const
    {
       llvm::IRBuilder<> builder(before);
@@ -135,14 +133,19 @@ namespace record_replay
       auto creator::visitCallInst(llvm::CallInst& instr) -> return_type
       {
          llvm::Function* callee = instr.getCalledFunction();
-         if (callee->getName() == "pthread_mutex_lock")
+         // Direct function invocation
+         if (callee)
          {
-            return create<lock_instruction>(lock_operation::Lock, instr.getArgOperand(0));
+            if (callee->getName() == "pthread_mutex_lock")
+            {
+               return create<lock_instruction>(lock_operation::Lock, instr.getArgOperand(0));
+            }
+            else if (callee->getName() == "pthread_mutex_unlock")
+            {
+               return create<lock_instruction>(lock_operation::Unlock, instr.getArgOperand(0));
+            }
          }
-         else if (callee->getName() == "pthread_mutex_unlock")
-         {
-            return create<lock_instruction>(lock_operation::Unlock, instr.getArgOperand(0));
-         }
+         /// @todo Case of indirect function invokation
          return return_type();
       }
       
@@ -156,5 +159,4 @@ namespace record_replay
       //----------------------------------------------------------------------------------
       
    } // end namespace llvm_visible_instruction
-   
-} // end namespace record_replay
+} // end namespace concurrency_passes

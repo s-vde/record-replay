@@ -12,5 +12,6 @@ add_llvm_loadable_module(LLVMRecordReplayPass
   functions.cpp
   instrumentation_utils.cpp
   llvm_visible_instruction.cpp
-  pass.cpp
+  RecordReplayPass.cpp
+  VisibleInstructionPass.cpp
 )

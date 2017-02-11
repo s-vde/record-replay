@@ -24,8 +24,7 @@ namespace llvm
 
 //----------------------------------------------------------------------------------------
 
-namespace record_replay
-{
+namespace concurrency_passes {
    //-------------------------------------------------------------------------------------
    
    using operand_t = llvm::Value*;
@@ -43,25 +42,23 @@ namespace record_replay
    
    struct construct_operand : public boost::static_visitor<llvm::Value*>
    {
-      construct_operand(llvm::Module& module, llvm::Instruction* before)
-      : m_module(module)
-      , m_before(before)
+      construct_operand(llvm::Instruction* before)
+      : m_before(before)
       {
       }
       
       template <typename operation_t>
       llvm::Value* operator()(const visible_instruction<operation_t>& instruction) const
       {
-         return construct_operand_impl(m_module, instruction.operand(), m_before);
+         return construct_operand_impl(instruction.operand(),
+                                       m_before);
       }
       
    private:
       
-      llvm::Value* construct_operand_impl(llvm::Module& module,
-                                          operand_t operand,
+      llvm::Value* construct_operand_impl(operand_t operand,
                                           llvm::Instruction* before) const;
       
-      llvm::Module& m_module;
       llvm::Instruction* m_before;
       
    }; // end struct construct_operand
@@ -98,5 +95,4 @@ namespace record_replay
    } // end namesapce llvm_visible_instruction
    
    //-------------------------------------------------------------------------------------
-   
-} // end namespace record_replay
+} // end namespace concurrency_passes
