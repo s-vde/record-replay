@@ -371,3 +371,42 @@ namespace scheduler
    
 } // end namespace scheduler
 
+//----------------------------------------------------------------------------------------
+
+int wrapper_spawn_thread(pthread_t* pid,
+                         const pthread_attr_t* attr,
+                         void* (*start_routine)(void*),
+                         void* args)
+{
+   return the_scheduler.spawn_thread(pid, nullptr, start_routine, args);
+}
+
+//----------------------------------------------------------------------------------------
+
+void wrapper_wait_registered()
+{
+   the_scheduler.wait_registered();
+}
+
+//----------------------------------------------------------------------------------------
+
+void wrapper_post_task(int operation, void* operand)
+{
+   the_scheduler.post_task(operation, program_model::Object(operand));
+}
+
+//----------------------------------------------------------------------------------------
+
+void wrapper_yield()
+{
+   the_scheduler.yield();
+}
+
+//----------------------------------------------------------------------------------------
+
+void wrapper_finish()
+{
+   the_scheduler.finish();
+}
+
+//----------------------------------------------------------------------------------------

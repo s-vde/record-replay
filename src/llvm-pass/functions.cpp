@@ -3,32 +3,19 @@
 
 // LLVM_PASS
 #include "instrumentation_utils.hpp"
-#include "print.hpp"
 
 // LLVM
 #include <llvm/IR/Module.h>
+#include <llvm/IR/IRBuilder.h>
+#include <llvm/Support/raw_ostream.h>
 
 // STL
 #include <exception>
 
 namespace record_replay
 {
-   namespace
-   {
-      //--------------------------------------------------------------------------------------------
-   
-      void check_type_exists(const llvm::Module& module, const std::string& type_name)
-      {
-         if (module.getTypeByName(type_name) == nullptr)
-         {
-            throw std::invalid_argument("Type " + type_name + " does not exists in module");
-         }
-      }
-      
-      //--------------------------------------------------------------------------------------------
-      
-   } // end namespace
-   
+   //-----------------------------------------------------------------------------------------------
+
    Functions::Functions() = default;
 
    //-----------------------------------------------------------------------------------------------
@@ -46,52 +33,108 @@ namespace record_replay
          "pthread_mutex_unlock",
       };
 		
-      register_wrapper(module, "finish()");
-      register_wrapper(module, "post_task(int, program_model::Object const&)");
-      register_wrapper(module, "spawn_thread(_opaque_pthread_t**, _opaque_pthread_attr_t const*, void* (*)(void*), void*)");
-      register_wrapper(module, "wait_registered()");
-      register_wrapper(module, "yield()");
-      register_wrapper(module, "Scheduler()");
-      register_wrapper(module, "~Scheduler()");
+      using namespace llvm;
+      AttributeSet attributes;
+      attributes = attributes.addAttribute(module.getContext(),
+                                           AttributeSet::FunctionIndex,
+                                           Attribute::NoUnwind);
+      
+      IRBuilder<> builder(module.getContext());
+      Type* void_type = Type::getVoidTy(module.getContext());
+      Type* void_ptr_type = builder.getInt8PtrTy();
+      
+      // wrapper_spawn_thread
+      {
+         Type* type_pthread = module.getTypeByName("struct._opaque_pthread_t");
+         if (!type_pthread) { throw std::invalid_argument("Type pthread_t not found in module"); }
+         Type* type_pthread_id = type_pthread->getPointerTo()->getPointerTo();
+         Type* type_pthread_attr = module.getTypeByName("struct._opaque_pthread_attr_t");
+         if (!type_pthread_attr) { throw std::invalid_argument("Type pthread_attr_t not found in module"); }
+         FunctionType* type_start_routine = FunctionType::get(void_ptr_type, { void_ptr_type }, false);
+         
+         auto* function_type = FunctionType::get(builder.getInt32Ty(),
+                                                 {  type_pthread_id,
+                                                    type_pthread_attr->getPointerTo(),
+                                                    type_start_routine->getPointerTo(),
+                                                    void_ptr_type },
+                                                 false);
+         add_wrapper_prototype(module, "wrapper_spawn_thread", function_type, attributes);
+      }
+      
+      // wrapper_wait_registered
+      {
+         FunctionType* function_type = FunctionType::get(void_type, false);
+         add_wrapper_prototype(module, "wrapper_wait_registered", function_type, attributes);
+      }
+      
+      // wrapper_post_task_type
+      {
+         FunctionType* function_type = FunctionType::get(void_type,
+                                                         { IntegerType::get(module.getContext(), 32),
+                                                           void_ptr_type },
+                                                         false);
+         add_wrapper_prototype(module, "wrapper_post_task", function_type, attributes);
+      }
+      
+      // wrapper_yield
+      {
+         FunctionType* function_type = FunctionType::get(void_type, false);
+         add_wrapper_prototype(module, "wrapper_yield", function_type, attributes);
+      }
+      
+      // wrapper_finish
+      {
+         FunctionType* function_type = FunctionType::get(void_type, false);
+         add_wrapper_prototype(module, "wrapper_finish", function_type, attributes);
+      }
 		
       register_c_function(module, "pthread_create");
-      
-      check_type_exists(module, "class.program_model::Object");
    }
    
    //-----------------------------------------------------------------------------------------------
+   
+   void Functions::add_wrapper_prototype(llvm::Module& module, const std::string& name,
+                                         llvm::FunctionType* type, llvm::AttributeSet& attributes)
+   {
+      using namespace llvm;
+      Function* function = cast<Function>(module.getOrInsertFunction(name, type, attributes));
+      m_wrappers.insert(function_map_t::value_type(name, function));
+      m_black_listed.insert(function->getName().str());
+   }
 	
+   //-----------------------------------------------------------------------------------------------
+   
    llvm::Function* Functions::Wrapper_finish() const
    {
-      return m_wrappers.find("finish()")->second;
+      return m_wrappers.find("wrapper_finish")->second;
    }
    
    //-----------------------------------------------------------------------------------------------
     
    llvm::Function* Functions::Wrapper_post_task() const
    {
-      return m_wrappers.find("post_task(int, program_model::Object const&)")->second;
+      return m_wrappers.find("wrapper_post_task")->second;
    }
    
    //-----------------------------------------------------------------------------------------------
     
    llvm::Function* Functions::Wrapper_spawn_thread() const
    {
-      return m_wrappers.find("spawn_thread(_opaque_pthread_t**, _opaque_pthread_attr_t const*, void* (*)(void*), void*)")->second;
+      return m_wrappers.find("wrapper_spawn_thread")->second;
    }
    
    //-----------------------------------------------------------------------------------------------
     
    llvm::Function* Functions::Wrapper_wait_registered() const
    {
-      return m_wrappers.find("wait_registered()")->second;
+      return m_wrappers.find("wrapper_wait_registered")->second;
    }
    
    //-----------------------------------------------------------------------------------------------
     
    llvm::Function* Functions::Wrapper_yield() const
    {
-      return m_wrappers.find("yield()")->second;
+      return m_wrappers.find("wrapper_yield")->second;
    }
    
    //-----------------------------------------------------------------------------------------------
@@ -102,36 +145,12 @@ namespace record_replay
    }
    
    //-----------------------------------------------------------------------------------------------
-	
-   llvm::Function* Functions::Scheduler_ctor() const
-   {
-      return m_wrappers.find("Scheduler()")->second;
-   }
-
-   //-----------------------------------------------------------------------------------------------
-   
-   llvm::Function* Functions::Scheduler_dtor() const
-   {
-      return m_wrappers.find("~Scheduler()")->second;
-   }
-   
-   //-----------------------------------------------------------------------------------------------
     
    bool Functions::blacklisted(llvm::Function* function) const
    {
       return
          m_c_functions.find(function->getName()) != m_c_functions.end() ||
         	m_black_listed.find(function->getName()) != m_black_listed.end();
-   }
-   
-   //-----------------------------------------------------------------------------------------------
-	
-   void Functions::register_wrapper(llvm::Module& module, const std::string& wrapper_name)
-   {
-      using namespace instrumentation_utils;
-      llvm::Function* wrapper = get_function_with_unmangled_name(module, "scheduler::Scheduler::" + wrapper_name);
-      m_wrappers.insert(function_map_t::value_type(wrapper_name, wrapper));
-      m_black_listed.insert(wrapper->getName().str());
    }
    
    //-----------------------------------------------------------------------------------------------

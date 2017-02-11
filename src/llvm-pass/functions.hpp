@@ -13,7 +13,9 @@
 
 namespace llvm
 {
+   class AttributeSet;
    class Function;
+   class FunctionType;
    class Module;
    
 } // end namespace llvm
@@ -46,7 +48,8 @@ namespace record_replay
         
    private:
       
-      void register_wrapper(llvm::Module& module, const std::string& wrapper_name);
+      void add_wrapper_prototype(llvm::Module& module, const std::string& name,
+                                 llvm::FunctionType* type, llvm::AttributeSet& attributes);
       void register_c_function(const llvm::Module& module, const std::string& name);
       
       function_map_t m_wrappers;

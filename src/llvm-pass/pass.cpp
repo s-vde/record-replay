@@ -36,10 +36,8 @@ namespace record_replay
    {
       try
       {
-         add_scheduler(M);
          mFunctions.initialize(M);
          auto program_main = create_program_main(M);
-         //         mStartRoutines.insert(program_main);
         	restore_main(M);
         	instrument_pthread_create_calls(program_main);
         	instrument_start_routines();
@@ -95,15 +93,12 @@ namespace record_replay
    void LightWeightPass::restore_main(llvm::Module& module)
    {
       using namespace llvm;
-      
       PRINTF(outputname(), "restore_main", "", "\n");
       Function* main = module.getFunction("main");
       if (main)
       {
          BasicBlock* BB = BasicBlock::Create(module.getContext(), "", main, nullptr);
-         CallInst::Create(mFunctions.Scheduler_ctor(), { mScheduler }, "", BB);
          CallInst::Create(module.getFunction("program_main"), { }, "", BB);
-         CallInst::Create(mFunctions.Scheduler_dtor(), { mScheduler }, "", BB);
          ConstantInt* return_value = ConstantInt::get(IntegerType::getInt32Ty(module.getContext()), 0, true);
          ReturnInst::Create(module.getContext(), return_value, BB);
          main->dump();
@@ -121,12 +116,9 @@ namespace record_replay
       for (const auto call : PthreadCreateCalls)
       {
          PRINT("\tptread_create(" << call->getArgOperand(2)->getName().str() << ") called by main\n");
-         instrumentation_utils::replace_call(
-            call,
-            mFunctions.Function_pthread_create(),
-            mFunctions.Wrapper_spawn_thread(),
-            { mScheduler }
-         );
+         instrumentation_utils::replace_call(call,
+                                             mFunctions.Function_pthread_create(),
+                                             mFunctions.Wrapper_spawn_thread());
          mStartRoutines.insert(llvm::cast<llvm::Function>(call->getArgOperand(2)));
       }
    }
@@ -138,11 +130,9 @@ namespace record_replay
       PRINTF(outputname(), "instrument_start_routines", "", "\n");
       for (auto start_routine : mStartRoutines)
       {
-         instrumentation_utils::add_call_begin(
-            start_routine,
-            mFunctions.Wrapper_wait_registered(),
-            { mScheduler }
-         );
+         instrumentation_utils::add_call_begin(start_routine,
+                                               mFunctions.Wrapper_wait_registered(),
+                                               {});
       }
    }
    
@@ -230,11 +220,11 @@ namespace record_replay
       const int operation_int = apply_visitor(operation_as_int<operand_t>(), instruction);
       ConstantInt* operation = ConstantInt::get(module.getContext(), APInt(32, operation_int, false));
       llvm::Value* operand = apply_visitor(construct_operand(module, &*inst_it), instruction);
-      CallInst::Create(mFunctions.Wrapper_post_task(),
-                       { mScheduler, operation, operand },
+      auto* call = CallInst::Create(mFunctions.Wrapper_post_task(),
+                       { operation, operand },
                        "",
                        &*inst_it);
-      CallInst::Create(mFunctions.Wrapper_yield(), { mScheduler }, "", &*(++inst_it));
+      CallInst::Create(mFunctions.Wrapper_yield(), {}, "", &*(++inst_it));
    }
    
    //-------------------------------------------------------------------------------------
@@ -242,7 +232,7 @@ namespace record_replay
    void LightWeightPass::add_thread_finished(llvm::Instruction* instruction)
    {
       PRINTF(outputname(), "add_thread_finished", "", "\n");
-      llvm::CallInst::Create(mFunctions.Wrapper_finish(), { mScheduler }, "", instruction);
+      llvm::CallInst::Create(mFunctions.Wrapper_finish(), {}, "", instruction);
    }
    
    //-------------------------------------------------------------------------------------

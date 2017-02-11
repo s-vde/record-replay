@@ -16,4 +16,5 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 	set(CMAKE_CXX_FLAGS "-undefined dynamic_lookup")
 endif()
 
+add_subdirectory(src/scheduler)
 add_subdirectory(src/llvm-pass)

@@ -27,22 +27,8 @@ namespace record_replay
                                                           operand_t operand,
                                                           llvm::Instruction* before) const
    {
-      using namespace utils::io;
-      using namespace instrumentation_utils;
-      const static auto mangled_name = get_mangled_name(module, "program_model", "Object", "C");
-      static llvm::Type* object_type = module.getTypeByName("class.program_model::Object");
-      if (mangled_name)
-      {
-         using namespace llvm;
-         static Function* llvm_object = cast<Function>(module.getFunction(*mangled_name));
-         // Construct program_model::Object
-         IRBuilder<> builder(before);
-         auto* object = builder.CreateAlloca(object_type);
-         auto* address = builder.CreatePointerCast(operand, builder.getInt8PtrTy());
-         CallInst::Create(llvm_object, { object, address }, "", before);
-         return object;
-      }
-      return nullptr;
+      llvm::IRBuilder<> builder(before);
+      return builder.CreatePointerCast(operand, builder.getInt8PtrTy());
    }
    
    //-------------------------------------------------------------------------------------

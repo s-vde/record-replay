@@ -98,7 +98,7 @@ namespace instrumentation_utils
    void replace_call(llvm::CallInst* call,
                      llvm::Function* callee,
                      llvm::Function* newcallee,
-                     ValueVec NewArgs);
+                     ValueVec NewArgs={});
    
    //-------------------------------------------------------------------------------------
 	

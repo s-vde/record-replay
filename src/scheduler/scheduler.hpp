@@ -272,3 +272,25 @@ namespace scheduler
    //-------------------------------------------------------------------------------------
    
 } // end namespace scheduler
+
+//----------------------------------------------------------------------------------------
+
+// Wrapper functions
+
+static scheduler::Scheduler the_scheduler;
+
+extern "C"
+{
+int wrapper_spawn_thread(pthread_t* pid, const pthread_attr_t* attr, void* (*start_routine)(void*), void* args);
+
+void wrapper_wait_registered();
+
+void wrapper_post_task(int operation, void* operand);
+
+void wrapper_yield();
+
+void wrapper_finish();
+   
+} // end extern "C"
+
+//----------------------------------------------------------------------------------------
