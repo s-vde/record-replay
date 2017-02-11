@@ -11,11 +11,13 @@ scheduler_build=${record_replay_base}/build/src/scheduler/libRecordReplaySchedul
 llvm_base=`echo $2`
 llvm_bin=${llvm_base}/build/bin
 
-input_program=`echo $3`
+cpp_utils_base=`echo $3`
+
+input_program=`echo $4`
 input_filename=$(basename "${input_program}")
 input_extension="${input_filename##*.}"
 
-output_dir=`echo $4`
+output_dir=`echo $5`
 
 compiler_flags="-pthread -emit-llvm "
 
@@ -26,8 +28,12 @@ else
    compiler_flags+="-std=c++14 "
 fi
 
-cd build/
-cmake ../
+test -d ${record_replay_base}/build || mkdir ${record_replay_base}/build
+cd ${record_replay_base}/build/
+cmake ../ \
+   -DLLVM_DIR=${llvm_base}/build/lib/cmake/llvm \
+   -DPROGRAM_MODEL_SRC=${record_replay_base}/src/program-model \
+   -DUTILS_SRC=${cpp_utils_base}/src
 make
 cd ${here}
 
