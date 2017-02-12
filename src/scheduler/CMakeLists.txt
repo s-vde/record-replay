@@ -6,6 +6,9 @@ set(CMAKE_CXX_FLAGS "-install_name @rpath/libRecordReplayScheduler.dylib")
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_MACOSX_RPATH 1)
 
+set(PROGRAM_MODEL_SRC ${CMAKE_CURRENT_SOURCE_DIR}/../program-model)
+set(PROGRAM_MODEL_SRC ${PROGRAM_MODEL_SRC} PARENT_SCOPE)
+
 include_directories(${UTILS_SRC})
 include_directories(${PROGRAM_MODEL_SRC})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
