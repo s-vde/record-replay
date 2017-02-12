@@ -19,6 +19,15 @@ input_extension="${input_filename##*.}"
 
 output_dir=`echo $5`
 
+custom_strategies=`echo $6`
+if [ -z "${custom_strategies// }" ]; then
+   custom_strategies=${record_replay_base}/src/scheduler/strategies/custom
+fi
+
+###
+echo Instrumenting ${input_program}
+###
+
 compiler_flags="-pthread -emit-llvm "
 
 if [ ${input_extension} == "c" ]; then
@@ -33,6 +42,7 @@ cd ${record_replay_base}/build/
 cmake ../ \
    -DLLVM_DIR=${llvm_base}/build/lib/cmake/llvm \
    -DPROGRAM_MODEL_SRC=${record_replay_base}/src/program-model \
+   -DCUSTOM_STRATEGIES=${custom_strategies} \
    -DUTILS_SRC=${cpp_utils_base}/src
 make
 cd ${here}

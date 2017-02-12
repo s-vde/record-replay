@@ -10,8 +10,10 @@ include_directories(${UTILS_SRC})
 include_directories(${PROGRAM_MODEL_SRC})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/strategies)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/strategies/custom)	
- 
+
+add_subdirectory(${CUSTOM_STRATEGIES} ${CMAKE_CURRENT_BINARY_DIR}/../selection-strategies)
+include_directories(${CUSTOM_STRATEGIES})
+
 add_library(RecordReplayScheduler SHARED 
   ${UTILS_SRC}/binary_sem.cpp
   ${UTILS_SRC}/utils_io.cpp
@@ -38,5 +40,6 @@ add_library(RecordReplayScheduler SHARED
   strategies/non_preemptive.cpp
   strategies/random.cpp
   strategies/selector_register.cpp
-  strategies/custom/custom_selector_register.cpp
 )
+
+target_link_libraries(RecordReplayScheduler CustomSelectionStrategies)
