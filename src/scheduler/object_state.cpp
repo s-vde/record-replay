@@ -65,7 +65,7 @@ namespace scheduler
 
    //-------------------------------------------------------------------------------------
    
-   unsigned int object_state::request(const instruction_t& instr)
+   bool object_state::request(const instruction_t& instr)
    {
       DEBUGF_SYNC("object", "request", instr, "\n");
       const auto op_type = static_cast<unsigned int>(instr.op()) % 2;
@@ -74,7 +74,11 @@ namespace scheduler
       {
          waitset.insert({instr.tid(), instr});
          DEBUG_SYNC(*this << "\n");
-         return m_current;
+         if (is_lock_access(instr) && op_type == 1 && m_current == 1)
+         {
+            return false;
+         }
+         return true;
       }
       throw std::logic_error("requesting thread already has instruction waiting");
    }

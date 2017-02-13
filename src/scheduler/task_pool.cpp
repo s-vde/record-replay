@@ -243,8 +243,7 @@ namespace scheduler
       auto data_races = data_race::get_data_races(operand, task);
       std::move(data_races.begin(), data_races.end(), std::back_inserter(m_data_races));
       // Update status of threads operating on same operand
-      const auto result = operand.request(task);
-      bool enabled = !is_lock_access(task) || result == 0;
+      const bool enabled = operand.request(task);
       set_status(tid, (enabled ? Thread::Status::ENABLED : Thread::Status::DISABLED));
    }
    

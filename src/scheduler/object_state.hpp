@@ -50,7 +50,7 @@ namespace scheduler
       
       explicit object_state(const object_t& object);
       
-      unsigned int request(const instruction_t& instr);
+      bool request(const instruction_t& instr);
       void perform(const thread_t::tid_t& tid);
       
       waitset_t::const_iterator begin(std::size_t index) const;
