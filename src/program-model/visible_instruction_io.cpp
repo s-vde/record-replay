@@ -11,7 +11,7 @@ namespace program_model
       {
          case memory_operation::Load            : return "Load";
          case memory_operation::Store           : return "Store";
-         case memory_operation::ReadModifyWrite : return "RWMW";
+         case memory_operation::ReadModifyWrite : return "RMW";
       }
    }
    

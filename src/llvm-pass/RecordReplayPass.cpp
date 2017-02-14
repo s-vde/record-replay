@@ -116,18 +116,9 @@ namespace concurrency_passes {
       //
       boost::apply_visitor(concurrency_passes::dump(), visible_instruction);
       //
-      const int operation = boost::apply_visitor(program_model::operation_as_int<operand_t>(),
-                                                 visible_instruction);
       
-      llvm::Value* operand = boost::apply_visitor(construct_operand(&*inst_it), visible_instruction);
-      
-      llvm::CallInst::Create(mFunctions.Wrapper_post_task(),
-                             { llvm::ConstantInt::get(function.getContext(),
-                                                       llvm::APInt(32, operation, false)),
-                                operand },
-                             "",
-                             &*inst_it);
-      llvm::CallInst::Create(mFunctions.Wrapper_yield(), {}, "", &*(++inst_it));
+      auto wrapper = concurrency_passes::wrap(function.getContext(), mFunctions, inst_it);
+      visible_instruction.apply_visitor(wrapper);
       ++m_nr_instrumented;
    }
    

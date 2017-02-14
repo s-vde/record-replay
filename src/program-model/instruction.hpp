@@ -7,7 +7,7 @@
 //--------------------------------------------------------------------------------------90
 /// @file instruction.hpp
 /// @author Susanne van den Elsen
-/// @date 2015
+/// @date 2015-2017
 //----------------------------------------------------------------------------------------
 
 namespace program_model
@@ -22,7 +22,7 @@ namespace program_model
       
       /// @brief Constructor.
       
-      Instruction(const Thread::tid_t tid, const Object::Op&, const Object&);
+      Instruction(const Thread::tid_t tid, const Object::Op&, const Object&, bool is_atomic);
       
       //----------------------------------------------------------------------------------
       
@@ -53,6 +53,8 @@ namespace program_model
       const Object& obj() const;
       
       //----------------------------------------------------------------------------------
+      
+      bool is_atomic() const;
         
    private:
         
@@ -61,6 +63,7 @@ namespace program_model
       Thread::tid_t mTid;
       Object::Op mOp;
       Object mObj;
+      bool m_is_atomic;
       
       //----------------------------------------------------------------------------------
       

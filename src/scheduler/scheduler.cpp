@@ -85,14 +85,14 @@ namespace scheduler
    
    //-------------------------------------------------------------------------------------
     
-   void Scheduler::post_task(const int op, const Object& obj)
+   void Scheduler::post_task(const int op, const Object& obj, bool is_atomic)
    {
       if (runs_controlled())
       {
          try
          {
             const Thread::tid_t tid = find_tid(pthread_self());
-            const Instruction instr(tid, static_cast<Object::Op>(op), obj);
+            const Instruction instr(tid, static_cast<Object::Op>(op), obj, is_atomic);
             DEBUGFNL(thread_str(tid), "post_task", instr, "");
             mPool.post(tid, instr);
             DEBUGFNL(thread_str(tid), "wait_for_turn", "", "");
@@ -320,7 +320,10 @@ namespace scheduler
       }
       E.set_status(status());
       dump_execution(E);
-      DEBUG(mPool.data_races() << "\n");
+      std::ofstream ofs;
+      ofs.open("dataraces.txt", std::ofstream::app);
+      ofs << mPool.data_races() << "\n----------\n\n";
+      ofs.close();
    }
    
    //-------------------------------------------------------------------------------------
@@ -413,9 +416,16 @@ void wrapper_wait_registered()
 
 //----------------------------------------------------------------------------------------
 
-void wrapper_post_task(int operation, void* operand)
+void wrapper_post_instruction(int operation, void* operand)
 {
    the_scheduler.post_task(operation, program_model::Object(operand));
+}
+
+//----------------------------------------------------------------------------------------
+
+void wrapper_post_memory_instruction(int operation, void* operand, bool is_atomic)
+{
+   the_scheduler.post_task(operation, program_model::Object(operand), is_atomic);
 }
 
 //----------------------------------------------------------------------------------------

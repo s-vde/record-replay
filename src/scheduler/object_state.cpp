@@ -47,6 +47,12 @@ namespace scheduler
             }
             std::transform(object.begin(1), object.end(1), std::back_inserter(data_races),
                             convert_to_race);
+            // filter the ones with two atomic operations out
+            data_races.erase(std::remove_if(data_races.begin(), data_races.end(), [] (const auto& data_race)
+                                            {
+                                               return data_race.first.is_atomic() && data_race.second.is_atomic();
+                                            }),
+                             data_races.end());
          }
          return data_races;
       }

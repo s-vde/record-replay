@@ -4,10 +4,14 @@
 #include "visible_instruction.hpp"
 
 // LLVM
+#include <llvm/IR/InstIterator.h>
 #include <llvm/IR/InstVisitor.h>
 
 // BOOST
 #include <boost/optional.hpp>
+
+// STL
+#include <vector>
 
 //--------------------------------------------------------------------------------------90
 /// @file llvm_visible_instruction.hpp
@@ -18,14 +22,20 @@
 namespace llvm
 {
    class Instruction;
-   class Module;
+   class LLVMContext;
    class Value;
 }
 
 //----------------------------------------------------------------------------------------
 
-namespace concurrency_passes {
-   //-------------------------------------------------------------------------------------
+namespace concurrency_passes
+{
+//--------------------------------------------------------------------------------------------------
+
+// Forward declarations
+class Functions;
+
+//--------------------------------------------------------------------------------------------------
    
    using operand_t = llvm::Value*;
    
@@ -38,32 +48,30 @@ namespace concurrency_passes {
    
    using visible_instruction_t = program_model::visible_instruction_t<operand_t>;
    
-   //-------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------
    
-   struct construct_operand : public boost::static_visitor<llvm::Value*>
-   {
-      construct_operand(llvm::Instruction* before)
-      : m_before(before)
-      {
-      }
+struct wrap : public boost::static_visitor<void>
+{
+   using arguments_t = std::vector<llvm::Value*>;
       
-      template <typename operation_t>
-      llvm::Value* operator()(const visible_instruction<operation_t>& instruction) const
-      {
-         return construct_operand_impl(instruction.operand(),
-                                       m_before);
-      }
-      
-   private:
-      
-      llvm::Value* construct_operand_impl(operand_t operand,
-                                          llvm::Instruction* before) const;
-      
-      llvm::Instruction* m_before;
-      
-   }; // end struct construct_operand
+   wrap(llvm::LLVMContext& context, Functions& functions, llvm::inst_iterator& instruction_it);
+   
+   void operator()(const memory_instruction& instruction);
+   void operator()(const lock_instruction& instruction);
+   
+private:
+   
+   llvm::Value* construct_operand(const operand_t& operand);
+   arguments_t construct_arguments(const memory_instruction& instruction);
+   arguments_t construct_arguments(const lock_instruction& instruction);
+   
+   llvm::LLVMContext& m_context;
+   Functions& m_functions;
+   llvm::inst_iterator& m_instruction_it;
+   
+}; // end struct construct_instruction
 
-   //-------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------
    
    struct dump : public boost::static_visitor<void>
    {

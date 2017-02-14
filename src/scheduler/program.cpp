@@ -31,7 +31,6 @@ namespace scheduler
       std::string str = mDir;
       str += "/";
       str += mFile;
-      str += std::to_string(mNrThreads);
       return str;
    }
    

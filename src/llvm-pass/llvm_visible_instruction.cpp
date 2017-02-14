@@ -2,8 +2,7 @@
 #include "llvm_visible_instruction.hpp"
 
 // LLVM_PASS
-#include "instrumentation_utils.hpp"
-#include "print.hpp"
+#include "functions.hpp"
 
 // PROGRAM_MODEL
 #include "visible_instruction_io.hpp"
@@ -13,23 +12,72 @@
 
 // LLVM
 #include <llvm/IR/IRBuilder.h>
-#include <llvm/IR/Module.h>
 #include <llvm/Support/raw_ostream.h>
 
 // STL
 #include <assert.h>
 
 namespace concurrency_passes {
-   //-------------------------------------------------------------------------------------
    
-   llvm::Value* construct_operand::construct_operand_impl(operand_t operand,
-                                                          llvm::Instruction* before) const
-   {
-      llvm::IRBuilder<> builder(before);
-      return builder.CreatePointerCast(operand, builder.getInt8PtrTy());
-   }
+//--------------------------------------------------------------------------------------------------
+
+wrap::wrap(llvm::LLVMContext& context, Functions& functions, llvm::inst_iterator& instruction_it)
+: m_context(context)
+, m_functions(functions)
+, m_instruction_it(instruction_it)
+{
+}
    
-   //-------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------
+   
+void wrap::operator()(const memory_instruction& instruction)
+{
+   auto arguments = construct_arguments(instruction);
+   llvm::CallInst::Create(m_functions.Wrapper_post_memory_instruction(), arguments, "", &*m_instruction_it);
+   ++m_instruction_it;
+   llvm::CallInst::Create(m_functions.Wrapper_yield(), {}, "", &*m_instruction_it);
+}
+   
+//--------------------------------------------------------------------------------------------------
+  
+void wrap::operator()(const lock_instruction& instruction)
+{
+   auto arguments = construct_arguments(instruction);
+   llvm::CallInst::Create(m_functions.Wrapper_post_instruction(), arguments, "", &*m_instruction_it);
+   ++m_instruction_it;
+   llvm::CallInst::Create(m_functions.Wrapper_yield(), {}, "", &*m_instruction_it);
+}
+
+//--------------------------------------------------------------------------------------------------
+
+auto wrap::construct_arguments(const memory_instruction& instruction) -> arguments_t
+{
+   using namespace llvm;
+   Value* arg_operation = ConstantInt::get(m_context, APInt(32, static_cast<int>(instruction.operation()), false));
+   Value* arg_operand = construct_operand(instruction.operand());
+   Value* arg_is_atomic = ConstantInt::get(m_context, APInt(8, (instruction.is_atomic() ? 1 : 0), false));
+   return { arg_operation, arg_operand, arg_is_atomic };
+}
+   
+//--------------------------------------------------------------------------------------------------
+   
+auto wrap::construct_arguments(const lock_instruction& instruction) -> arguments_t
+{
+   using namespace llvm;
+   Value* arg_operation = ConstantInt::get(m_context, APInt(32, static_cast<int>(instruction.operation()), false));
+   Value* arg_operand = construct_operand(instruction.operand());
+   return { arg_operation, arg_operand };
+}
+   
+//--------------------------------------------------------------------------------------------------
+   
+llvm::Value* wrap::construct_operand(const operand_t& operand)
+{
+   llvm::IRBuilder<> builder(&*m_instruction_it);
+   return builder.CreatePointerCast(operand, builder.getInt8PtrTy());
+}
+   
+//--------------------------------------------------------------------------------------------------
    
    namespace
    {

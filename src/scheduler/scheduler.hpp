@@ -87,7 +87,7 @@ namespace scheduler
       /// Instruction object from the the input, posts this Instruction in mPool and calls
       /// Scheduler::wait_for_turn.
 
-      void post_task(const int op, const Object& obj);
+      void post_task(const int op, const Object& obj, bool is_atomic=false);
       
       //----------------------------------------------------------------------------------
         
@@ -282,15 +282,16 @@ static scheduler::Scheduler the_scheduler;
 extern "C"
 {
 int wrapper_spawn_thread(pthread_t* pid, const pthread_attr_t* attr, void* (*start_routine)(void*), void* args);
-
+   
 void wrapper_wait_registered();
-
-void wrapper_post_task(int operation, void* operand);
-
+   
+void wrapper_post_instruction(int operation, void* operand);
+   
+void wrapper_post_memory_instruction(int operation, void* operand, bool is_atomic);
+   
 void wrapper_yield();
-
+   
 void wrapper_finish();
    
 } // end extern "C"
 
-//----------------------------------------------------------------------------------------

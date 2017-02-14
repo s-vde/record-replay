@@ -12,17 +12,22 @@ namespace program_model
 {
    //-------------------------------------------------------------------------------------
    
-   std::ostream& operator<<(std::ostream& os, const Instruction& instr)
+   std::ostream& operator<<(std::ostream& os, const Instruction& instruction)
    {
-      os << instr.tid() << " " << instr.op() << " " << instr.obj();
+      os    << instruction.tid() << " "
+            << instruction.op() << " "
+            << instruction.obj() << " "
+            << (instruction.is_atomic() ? "atomic" : "nonatomic");
       return os;
    }
    
    //-------------------------------------------------------------------------------------
    
-   std::istream& operator>>(std::istream& is, Instruction& instr)
+   std::istream& operator>>(std::istream& is, Instruction& instruction)
    {
-      is >> instr.mTid >> instr.mOp >> instr.mObj;
+      std::string atomic_str;
+      is >> instruction.mTid >> instruction.mOp >> instruction.mObj >> atomic_str;
+      instruction.m_is_atomic = (atomic_str == "atomic");
       return is;
    }
    

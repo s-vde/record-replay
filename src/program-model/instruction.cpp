@@ -10,21 +10,27 @@ namespace program_model
    
    Instruction::Instruction(const Thread::tid_t tid,
                             const Object::Op& op,
-                            const Object& obj)
+                            const Object& obj,
+                            const bool is_atomic)
    : mTid(tid)
    , mOp(op)
-   , mObj(obj) { }
+   , mObj(obj)
+   , m_is_atomic(is_atomic) { }
    
    //-------------------------------------------------------------------------------------
     
    Instruction::Instruction()
-   : Instruction(-1, Object::Op::READ, Object()) { }
+   : Instruction(-1, Object::Op::READ, Object(), false) { }
    
    //-------------------------------------------------------------------------------------
     
    bool Instruction::operator==(const Instruction& other) const
    {
-      return mTid == other.mTid && mOp == other.mOp && mObj == other.mObj;
+      return
+         mTid == other.mTid &&
+         mOp == other.mOp &&
+         mObj == other.mObj &&
+         m_is_atomic == other.m_is_atomic;
    }
    
    //-------------------------------------------------------------------------------------
@@ -46,6 +52,13 @@ namespace program_model
    const Object& Instruction::obj() const
    {
       return mObj;
+   }
+   
+   //-------------------------------------------------------------------------------------
+   
+   bool Instruction::is_atomic() const
+   {
+      return m_is_atomic;
    }
    
    //-------------------------------------------------------------------------------------

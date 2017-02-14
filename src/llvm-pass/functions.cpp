@@ -51,40 +51,47 @@ namespace concurrency_passes {
          if (!type_pthread_attr) { throw std::invalid_argument("Type pthread_attr_t not found in module"); }
          FunctionType* type_start_routine = FunctionType::get(void_ptr_type, { void_ptr_type }, false);
          
-         auto* function_type = FunctionType::get(builder.getInt32Ty(),
-                                                 {  type_pthread_id,
-                                                    type_pthread_attr->getPointerTo(),
-                                                    type_start_routine->getPointerTo(),
-                                                    void_ptr_type },
-                                                 false);
-         add_wrapper_prototype(module, "wrapper_spawn_thread", function_type, attributes);
+         auto* type = FunctionType::get(builder.getInt32Ty(),
+                                       {  type_pthread_id,
+                                          type_pthread_attr->getPointerTo(),
+                                          type_start_routine->getPointerTo(),
+                                          void_ptr_type },
+                                       false);
+         add_wrapper_prototype(module, "wrapper_spawn_thread", type, attributes);
       }
       
       // wrapper_wait_registered
       {
-         FunctionType* function_type = FunctionType::get(void_type, false);
-         add_wrapper_prototype(module, "wrapper_wait_registered", function_type, attributes);
+         auto* type = FunctionType::get(void_type, false);
+         add_wrapper_prototype(module, "wrapper_wait_registered", type, attributes);
       }
       
-      // wrapper_post_task_type
+      // wrapper_post_instruction
       {
-         FunctionType* function_type = FunctionType::get(void_type,
-                                                         { IntegerType::get(module.getContext(), 32),
-                                                           void_ptr_type },
-                                                         false);
-         add_wrapper_prototype(module, "wrapper_post_task", function_type, attributes);
+         auto* type = FunctionType::get(void_type,
+                                        { builder.getInt32Ty(), void_ptr_type },
+                                        false);
+         add_wrapper_prototype(module, "wrapper_post_instruction", type, attributes);
+      }
+      
+      // wrapper_post_memory_instruction
+      {
+         auto* type = FunctionType::get(void_type,
+                                        { builder.getInt32Ty(), void_ptr_type, builder.getInt8Ty() },
+                                        false);
+         add_wrapper_prototype(module, "wrapper_post_memory_instruction", type, attributes);
       }
       
       // wrapper_yield
       {
-         FunctionType* function_type = FunctionType::get(void_type, false);
-         add_wrapper_prototype(module, "wrapper_yield", function_type, attributes);
+         auto* type = FunctionType::get(void_type, false);
+         add_wrapper_prototype(module, "wrapper_yield", type, attributes);
       }
       
       // wrapper_finish
       {
-         FunctionType* function_type = FunctionType::get(void_type, false);
-         add_wrapper_prototype(module, "wrapper_finish", function_type, attributes);
+         auto* type = FunctionType::get(void_type, false);
+         add_wrapper_prototype(module, "wrapper_finish", type, attributes);
       }
 		
       register_c_function(module, "pthread_create");
@@ -110,9 +117,16 @@ namespace concurrency_passes {
    
    //-----------------------------------------------------------------------------------------------
     
-   llvm::Function* Functions::Wrapper_post_task() const
+   llvm::Function* Functions::Wrapper_post_instruction() const
    {
-      return m_wrappers.find("wrapper_post_task")->second;
+      return m_wrappers.find("wrapper_post_instruction")->second;
+   }
+   
+   //-----------------------------------------------------------------------------------------------
+   
+   llvm::Function* Functions::Wrapper_post_memory_instruction() const
+   {
+      return m_wrappers.find("wrapper_post_memory_instruction")->second;
    }
    
    //-----------------------------------------------------------------------------------------------
