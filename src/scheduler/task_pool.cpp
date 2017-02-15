@@ -202,7 +202,7 @@ namespace scheduler
    
    //-------------------------------------------------------------------------------------
    
-   std::vector<data_race::type> TaskPool::data_races() const
+   std::vector<data_race_t> TaskPool::data_races() const
    {
       std::lock_guard<std::mutex> lock(m_objects_mutex);
       return m_data_races;
@@ -240,7 +240,7 @@ namespace scheduler
       }
       // Update m_data_races
       auto& operand = m_objects.find(address)->second;
-      auto data_races = data_race::get_data_races(operand, task);
+      auto data_races = get_data_races(operand, task);
       std::move(data_races.begin(), data_races.end(), std::back_inserter(m_data_races));
       // Update status of threads operating on same operand
       const bool enabled = operand.request(task);

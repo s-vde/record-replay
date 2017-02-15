@@ -1,6 +1,7 @@
 #pragma once
 
 // SCHEDULER
+#include "data_race.hpp"
 #include "object_state.hpp"
 
 // PROGRAM_MODEL
@@ -173,7 +174,7 @@ namespace scheduler
       
       //----------------------------------------------------------------------------------
       
-      std::vector<data_race::type> data_races() const;
+      std::vector<data_race_t> data_races() const;
    
       //----------------------------------------------------------------------------------
       
@@ -206,7 +207,7 @@ namespace scheduler
       
       //----------------------------------------------------------------------------------
       
-      std::vector<data_race::type> m_data_races;
+      std::vector<data_race_t> m_data_races;
       
       //----------------------------------------------------------------------------------
         

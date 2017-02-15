@@ -16,7 +16,7 @@ namespace scheduler
 {
    //-------------------------------------------------------------------------------------
    
-   namespace data_race
+   namespace
    {
       //----------------------------------------------------------------------------------
       
@@ -30,36 +30,37 @@ namespace scheduler
       
       //----------------------------------------------------------------------------------
       
-      vector_t get_data_races(const object_state& object, const instruction_t& instr)
+   } // end namespace
+   
+   //-------------------------------------------------------------------------------------
+   
+   std::vector<data_race_t> get_data_races(const object_state& object, 
+                                           const program_model::Instruction& instr)
+   {
+      auto convert_to_race = [&instr] (const auto& entry)
       {
-         auto convert_to_race = [&instr] (const auto& entry)
+         return data_race_t{entry.second, instr};
+      };
+      std::vector<data_race_t> data_races;
+      if (is_a_memory_operation(instr.op()))
+      {
+         if (instr.op() == program_model::Object::Op::WRITE ||
+             instr.op() == program_model::Object::Op::RMW)
          {
-            return data_race::type{entry.second, instr};
-         };
-         vector_t data_races;
-         if (is_a_memory_operation(instr.op()))
-         {
-            if (instr.op() == program_model::Object::Op::WRITE ||
-                instr.op() == program_model::Object::Op::RMW)
-            {
-               std::transform(object.begin(0), object.end(0), std::back_inserter(data_races),
-                              convert_to_race);
-            }
-            std::transform(object.begin(1), object.end(1), std::back_inserter(data_races),
-                            convert_to_race);
-            // filter the ones with two atomic operations out
-            data_races.erase(std::remove_if(data_races.begin(), data_races.end(), [] (const auto& data_race)
-                                            {
-                                               return data_race.first.is_atomic() && data_race.second.is_atomic();
-                                            }),
-                             data_races.end());
+            std::transform(object.begin(0), object.end(0), std::back_inserter(data_races),
+                           convert_to_race);
          }
-         return data_races;
+         std::transform(object.begin(1), object.end(1), std::back_inserter(data_races),
+                         convert_to_race);
+         // filter the ones with two atomic operations out
+         data_races.erase(std::remove_if(data_races.begin(), data_races.end(), [] (const auto& data_race)
+                                         {
+                                            return data_race.first.is_atomic() && data_race.second.is_atomic();
+                                         }),
+                          data_races.end());
       }
-      
-      //----------------------------------------------------------------------------------
-      
-   } // end namespace data_race
+      return data_races;
+   }
    
    //-------------------------------------------------------------------------------------
    

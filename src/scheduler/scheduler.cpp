@@ -4,6 +4,7 @@
 // PROGRAM_MODEL
 #include "execution_io.hpp"
 #include "instruction_io.hpp"
+#include "visible_instruction_io.hpp"
 
 // UTILS
 #include "container_io.hpp"
@@ -17,11 +18,11 @@
 namespace scheduler
 {
    //-------------------------------------------------------------------------------------
-   
+
    class unregistered_thread : public std::exception {};
-   
+
    //-------------------------------------------------------------------------------------
-   
+
    Scheduler::Scheduler()
    : mLocVars(std::make_unique<LocalVars>())
    , mPool()
@@ -39,17 +40,17 @@ namespace scheduler
       DEBUGNL("Starting Scheduler");
       DEBUGNL("schedule:\t" << mLocVars->schedule());
    }
-   
+
    //-------------------------------------------------------------------------------------
-    
+
    Scheduler::~Scheduler()
    {
       DEBUGNL("~Scheduler");
       join();
    }
-   
+
    //-------------------------------------------------------------------------------------
-    
+
    int Scheduler::spawn_thread(pthread_t* pid,
                                const pthread_attr_t* attr,
                                void* (*start_routine)(void*),
@@ -69,9 +70,9 @@ namespace scheduler
       mRegCond.notify_all();
       return ret;
    }
-   
+
    //-------------------------------------------------------------------------------------
-    
+
    void Scheduler::wait_registered()
    {
       std::unique_lock<std::mutex> ul(mRegMutex);
@@ -82,18 +83,20 @@ namespace scheduler
          return mThreads.find(pthread_self()) != mThreads.end();
       });
    }
-   
+
    //-------------------------------------------------------------------------------------
-    
-   void Scheduler::post_task(const int op, const Object& obj, bool is_atomic)
+
+   void Scheduler::post_task(const int op, const Object& obj, bool is_atomic,
+                             const std::string& file_name, unsigned int line_number)
    {
       if (runs_controlled())
       {
          try
          {
             const Thread::tid_t tid = find_tid(pthread_self());
-            const Instruction instr(tid, static_cast<Object::Op>(op), obj, is_atomic);
-            DEBUGFNL(thread_str(tid), "post_task", instr, "");
+            Instruction instr(tid, static_cast<Object::Op>(op), obj, is_atomic);
+            instr.add_meta_data({ file_name, line_number });
+            DEBUGF(thread_str(tid), "post_task", instr, "\n");
             mPool.post(tid, instr);
             DEBUGFNL(thread_str(tid), "wait_for_turn", "", "");
             mControl.wait_for_turn(tid);
@@ -104,9 +107,9 @@ namespace scheduler
          }
       }
    }
-   
+
    //-------------------------------------------------------------------------------------
-    
+
    void Scheduler::yield()
    {
       if (runs_controlled())
@@ -123,7 +126,7 @@ namespace scheduler
          }
       }
    }
-   
+
    //-------------------------------------------------------------------------------------
 
    void Scheduler::finish()
@@ -135,9 +138,9 @@ namespace scheduler
          mPool.set_status_protected(tid, Thread::Status::FINISHED);
       }
    }
-   
+
    //-------------------------------------------------------------------------------------
-    
+
    void Scheduler::join()
    {
       if (mThread.joinable())
@@ -150,11 +153,11 @@ namespace scheduler
          DEBUGNL("!mThread.joinable()");
       }
    }
-   
+
    //-------------------------------------------------------------------------------------
    // SCHEDULER INTERNAL
    //-------------------------------------------------------------------------------------
-    
+
    Thread::tid_t Scheduler::find_tid(const pthread_t& pid)
    {
       std::lock_guard<std::mutex> guard(mRegMutex);
@@ -165,7 +168,7 @@ namespace scheduler
       }
       throw unregistered_thread();
    }
-   
+
    //-------------------------------------------------------------------------------------
 
    bool Scheduler::runs_controlled()
@@ -175,23 +178,23 @@ namespace scheduler
          s != Execution::Status::BLOCKED &&
          s != Execution::Status::ERROR;
    }
-   
+
    //-------------------------------------------------------------------------------------
-    
+
    Execution::Status Scheduler::status()
    {
       std::lock_guard<std::mutex> guard(mStatusMutex);
       return mStatus;
    }
-   
+
    //-------------------------------------------------------------------------------------
-    
+
    void Scheduler::set_status(const Execution::Status &s)
    {
       std::lock_guard<std::mutex> guard(mStatusMutex);
       mStatus = s;
    }
-   
+
    //-------------------------------------------------------------------------------------
 
    std::string Scheduler::thread_str(const Thread::tid_t& tid)
@@ -200,20 +203,20 @@ namespace scheduler
       ss << "[thread" << tid << "]\t\t";
       return ss.str();
    }
-   
+
    //-------------------------------------------------------------------------------------
-    
+
    std::string Scheduler::thread_str(const pthread_t& pid)
    {
       std::stringstream ss("");
       ss << "[thread" << pid << "]\t\t";
       return ss.str();
    }
-   
+
    //-------------------------------------------------------------------------------------
-    
+
    // THREAD
-    
+
    // #todo Look at mutex protection in updating E (i.e. retreiving current_task),
    // and in selecting the next thread. At this point, no other thread should operate
    // on mPool, but this is not checked/enforced.
@@ -222,9 +225,9 @@ namespace scheduler
       mControl.set_owner(mThread.get_id()); // mThread.get_id() == std::this_thread::get_id()
       wait_all_registered();
       mPool.wait_enabled_collected();
-        
+
       Execution E(mLocVars->nr_threads(), mPool.program_state());
-        
+
       while (status() == Execution::Status::RUNNING)
       {
          DEBUGNL("---------- [round" << mLocVars->task_nr() << "]");
@@ -254,11 +257,11 @@ namespace scheduler
       }
       close(E);
    }
-   
+
    //-------------------------------------------------------------------------------------
-    
+
    // THREAD (PRIVATE)
-    
+
    void Scheduler::wait_all_registered()
    {
       std::unique_lock<std::mutex> ul(mRegMutex);
@@ -267,9 +270,9 @@ namespace scheduler
             DEBUGFNL("Scheduler", "wait_all_registered", "", "");
             return mNrRegistered == mLocVars->nr_threads(); });
    }
-   
+
    //-------------------------------------------------------------------------------------
-    
+
    /// Sets tid as the current thread in TaskPool, removing and obtaining the current
    /// posted task by Thread tid from the TaskPool. Removing the task is to guarantee that
    /// the Scheduler thread blocks on mPool.all_enabled_collected, because the thread only
@@ -288,9 +291,9 @@ namespace scheduler
       }
       return false;
    }
-   
+
    //-------------------------------------------------------------------------------------
-    
+
    /// @note As soon as internal Scheduler status is set to ERROR new threads are not
    /// waiting anymore, but we already waiting threads have to be "waken-up".
 
@@ -299,9 +302,9 @@ namespace scheduler
       ERROR("Scheduler::report_error", what);
       set_status(Execution::Status::ERROR);
    }
-   
+
    //-------------------------------------------------------------------------------------
-    
+
    void Scheduler::close(Execution& E)
    {
       DEBUGFNL("Scheduler", "close", "", to_string(status()));
@@ -320,14 +323,11 @@ namespace scheduler
       }
       E.set_status(status());
       dump_execution(E);
-      std::ofstream ofs;
-      ofs.open("dataraces.txt", std::ofstream::app);
-      ofs << mPool.data_races() << "\n----------\n\n";
-      ofs.close();
+      dump_data_races();
    }
-   
+
    //-------------------------------------------------------------------------------------
-    
+
    void Scheduler::dump_execution(const Execution& E) const
    {
       if (!E.empty())
@@ -336,7 +336,7 @@ namespace scheduler
          record.open("record.txt");
          record << E;
          record.close();
-            
+
          std::ofstream record_short;
          record_short.open("record_short.txt");
          record_short << to_short_string(E);
@@ -345,9 +345,23 @@ namespace scheduler
    }
    
    //-------------------------------------------------------------------------------------
-    
+   
+   void Scheduler::dump_data_races() const
+   {
+      std::ofstream ofs;
+      ofs.open("data_races.txt", std::ofstream::app);
+      for (const auto& data_race : mPool.data_races())
+      {
+         write_to_stream(ofs, data_race);
+      }
+      ofs << "\n>>>>>\n\n";
+      ofs.close();
+   }
+
+   //-------------------------------------------------------------------------------------
+
    // Class Scheduler::LocalVars
-    
+
    Scheduler::LocalVars::LocalVars()
    : mNrThreads(0)
    , mSchedule()
@@ -364,37 +378,37 @@ namespace scheduler
          // #todo Handle such an error
       }
    }
-   
+
    //-------------------------------------------------------------------------------------
-    
+
    int Scheduler::LocalVars::nr_threads() const
    {
       return mNrThreads;
    }
-   
+
    //-------------------------------------------------------------------------------------
-    
+
    const schedule_t& Scheduler::LocalVars::schedule() const
    {
       return mSchedule;
    }
-   
+
    //-------------------------------------------------------------------------------------
-    
+
    int Scheduler::LocalVars::task_nr() const
    {
       return mTaskNr;
    }
-   
+
    //-------------------------------------------------------------------------------------
-    
+
    void Scheduler::LocalVars::increase_task_nr()
    {
       mTaskNr++;
    }
-   
+
    //-------------------------------------------------------------------------------------
-   
+
 } // end namespace scheduler
 
 //----------------------------------------------------------------------------------------
@@ -416,16 +430,20 @@ void wrapper_wait_registered()
 
 //----------------------------------------------------------------------------------------
 
-void wrapper_post_instruction(int operation, void* operand)
+void wrapper_post_instruction(int operation, void* operand,
+                              const char* file_name, unsigned int line_number)
 {
-   the_scheduler.post_task(operation, program_model::Object(operand));
+   the_scheduler.post_task(operation, program_model::Object(operand), false,
+                           file_name, line_number);
 }
 
 //----------------------------------------------------------------------------------------
 
-void wrapper_post_memory_instruction(int operation, void* operand, bool is_atomic)
+void wrapper_post_memory_instruction(int operation, void* operand, bool is_atomic,
+                                     const char* file_name, unsigned int line_number)
 {
-   the_scheduler.post_task(operation, program_model::Object(operand), is_atomic);
+   the_scheduler.post_task(operation, program_model::Object(operand), is_atomic,
+                           file_name, line_number);
 }
 
 //----------------------------------------------------------------------------------------

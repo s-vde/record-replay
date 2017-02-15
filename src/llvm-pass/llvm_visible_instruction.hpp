@@ -36,71 +36,74 @@ namespace concurrency_passes
 class Functions;
 
 //--------------------------------------------------------------------------------------------------
-   
+
    using operand_t = llvm::Value*;
-   
+
    template <typename operation_t>
    using visible_instruction = program_model::visible_instruction<operation_t, operand_t>;
-   
+
    using memory_instruction = program_model::memory_instruction<operand_t>;
-   
+
    using lock_instruction = program_model::lock_instruction<operand_t>;
-   
+
    using visible_instruction_t = program_model::visible_instruction_t<operand_t>;
-   
+
 //--------------------------------------------------------------------------------------------------
-   
+
 struct wrap : public boost::static_visitor<void>
 {
    using arguments_t = std::vector<llvm::Value*>;
-      
+
    wrap(llvm::LLVMContext& context, Functions& functions, llvm::inst_iterator& instruction_it);
-   
+
    void operator()(const memory_instruction& instruction);
    void operator()(const lock_instruction& instruction);
-   
+
 private:
-   
-   llvm::Value* construct_operand(const operand_t& operand);
+
    arguments_t construct_arguments(const memory_instruction& instruction);
    arguments_t construct_arguments(const lock_instruction& instruction);
    
+   llvm::Value* construct_operand(const operand_t& operand);
+   llvm::Value* construct_file_name(const std::string& file_name);
+   llvm::Value* construct_line_number(unsigned int line_number);
+
    llvm::LLVMContext& m_context;
    Functions& m_functions;
    llvm::inst_iterator& m_instruction_it;
-   
+
 }; // end struct construct_instruction
 
 //--------------------------------------------------------------------------------------------------
-   
+
    struct dump : public boost::static_visitor<void>
    {
       void operator()(const memory_instruction& instruction) const;
       void operator()(const lock_instruction& instruction) const;
-      
+
    }; // end struct dump
-   
+
    //-------------------------------------------------------------------------------------
-   
+
    namespace llvm_visible_instruction
    {
       struct creator
       : public llvm::InstVisitor<creator, boost::optional<visible_instruction_t>>
       {
          using return_type = boost::optional<visible_instruction_t>;
-         
+
          // Potential Visible Instructions
          return_type visitLoadInst(llvm::LoadInst& instr);
          return_type visitStoreInst(llvm::StoreInst& instr);
          return_type visitAtomicRMWInst(llvm::AtomicRMWInst& instr);
          return_type visitCallInst(llvm::CallInst& instr);
-         
+
          // Default
          return_type visitInstruction(llvm::Instruction& instr);
-         
+
       }; // end struct creator
-      
+
    } // end namesapce llvm_visible_instruction
-   
+
    //-------------------------------------------------------------------------------------
 } // end namespace concurrency_passes

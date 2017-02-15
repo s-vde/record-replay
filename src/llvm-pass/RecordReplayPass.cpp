@@ -116,7 +116,6 @@ namespace concurrency_passes {
       //
       boost::apply_visitor(concurrency_passes::dump(), visible_instruction);
       //
-      
       auto wrapper = concurrency_passes::wrap(function.getContext(), mFunctions, inst_it);
       visible_instruction.apply_visitor(wrapper);
       ++m_nr_instrumented;

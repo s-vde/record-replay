@@ -1,5 +1,8 @@
 #pragma once
 
+// SCHEDULER
+#include "data_race.hpp"
+
 // PROGRAM_MODEL
 #include "instruction.hpp"
 
@@ -22,18 +25,11 @@ namespace scheduler
    
    //-------------------------------------------------------------------------------------
    
-   namespace data_race
-   {
-      using instruction_t = program_model::Instruction;
-      using type = std::pair<instruction_t, instruction_t>;
-      using vector_t = std::vector<type>;
+   /// @brief Returns the set of instructions posted for the given object that form
+   /// a data race with the given instruction.
       
-      /// @brief Returns the set of instructions posted for the given object that form
-      /// a data race with the given instruction.
-      
-      vector_t get_data_races(const object_state& object, const instruction_t& instr);
-      
-   } // end namespace data_race
+   std::vector<data_race_t> get_data_races(const object_state& object, 
+                                           const program_model::Instruction& instr);
    
    //-------------------------------------------------------------------------------------
    

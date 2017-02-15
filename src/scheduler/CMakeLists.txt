@@ -17,7 +17,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/strategies)
 add_subdirectory(${CUSTOM_STRATEGIES} ${CMAKE_CURRENT_BINARY_DIR}/../selection-strategies)
 include_directories(${CUSTOM_STRATEGIES})
 
-add_library(RecordReplayScheduler SHARED 
+add_library(RecordReplayScheduler SHARED
   ${UTILS_SRC}/binary_sem.cpp
   ${UTILS_SRC}/utils_io.cpp
   ${PROGRAM_MODEL_SRC}/execution.cpp
@@ -32,7 +32,9 @@ add_library(RecordReplayScheduler SHARED
   ${PROGRAM_MODEL_SRC}/thread_io.cpp
   ${PROGRAM_MODEL_SRC}/transition.cpp
   ${PROGRAM_MODEL_SRC}/transition_io.cpp
+  ${PROGRAM_MODEL_SRC}/visible_instruction_io.cpp
   control.cpp
+  data_race.cpp
   object_state.cpp
   program.cpp
   replay.cpp

@@ -41,6 +41,7 @@ namespace concurrency_passes {
       IRBuilder<> builder(module.getContext());
       Type* void_type = Type::getVoidTy(module.getContext());
       Type* void_ptr_type = builder.getInt8PtrTy();
+      Type* type_char_ptr = builder.getInt8PtrTy();
       
       // wrapper_spawn_thread
       {
@@ -69,7 +70,8 @@ namespace concurrency_passes {
       // wrapper_post_instruction
       {
          auto* type = FunctionType::get(void_type,
-                                        { builder.getInt32Ty(), void_ptr_type },
+                                        { builder.getInt32Ty(), void_ptr_type,
+                                          type_char_ptr, builder.getInt32Ty() },
                                         false);
          add_wrapper_prototype(module, "wrapper_post_instruction", type, attributes);
       }
@@ -77,7 +79,9 @@ namespace concurrency_passes {
       // wrapper_post_memory_instruction
       {
          auto* type = FunctionType::get(void_type,
-                                        { builder.getInt32Ty(), void_ptr_type, builder.getInt8Ty() },
+                                        { builder.getInt32Ty(), void_ptr_type, 
+                                          builder.getInt8Ty(), type_char_ptr, 
+                                          builder.getInt32Ty() },
                                         false);
          add_wrapper_prototype(module, "wrapper_post_memory_instruction", type, attributes);
       }

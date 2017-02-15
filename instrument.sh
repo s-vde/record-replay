@@ -28,7 +28,7 @@ fi
 echo Instrumenting ${input_program}
 ###
 
-compiler_flags="-pthread -emit-llvm "
+compiler_flags="-O0 -g -pthread -emit-llvm "
 
 if [ ${input_extension} == "c" ]; then
    compiler=${llvm_bin}/clang
