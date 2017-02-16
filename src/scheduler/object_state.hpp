@@ -1,7 +1,7 @@
 #pragma once
 
 // SCHEDULER
-#include "data_race.hpp"
+#include "concurrency_error.hpp"
 
 // PROGRAM_MODEL
 #include "instruction.hpp"

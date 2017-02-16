@@ -235,25 +235,31 @@ namespace scheduler
          {
             E.push_back(*mPool.current_task(), mPool.program_state());
          }
-         auto selection = mSelector->select(mPool,
-                                            mLocVars->schedule(),
-                                            mLocVars->task_nr());
-         if (selection.first == Execution::Status::RUNNING)
+         try 
          {
-            /// @pre
-            assert(selection.second >= 0);
-            if (!schedule_thread(selection.second))
+            auto selection = mSelector->select(mPool, mLocVars->schedule(), mLocVars->task_nr());
+            if (selection.first == Execution::Status::RUNNING)
             {
-               report_error("selection error");
+               assert(selection.second >= 0);
+               if (!schedule_thread(selection.second))
+               {
+                  report_error("selection error");
+                  break;
+               }
+            }
+            else
+            {
+               set_status(selection.first);
                break;
             }
+            mPool.wait_enabled_collected();
          }
-         else
+         catch(const deadlock_exception& deadlock)
          {
-            set_status(selection.first);
+            write_to_stream(std::cout, deadlock.get());
+            set_status(Execution::Status::DEADLOCK);
             break;
          }
-         mPool.wait_enabled_collected();
       }
       close(E);
    }

@@ -33,8 +33,8 @@ add_library(RecordReplayScheduler SHARED
   ${PROGRAM_MODEL_SRC}/transition.cpp
   ${PROGRAM_MODEL_SRC}/transition_io.cpp
   ${PROGRAM_MODEL_SRC}/visible_instruction_io.cpp
+  concurrency_error.cpp
   control.cpp
-  data_race.cpp
   object_state.cpp
   program.cpp
   replay.cpp

@@ -11,6 +11,9 @@
 // UTILS
 #include "debug.hpp"
 
+// STL
+#include <algorithm>
+
 using namespace program_model;
 
 //--------------------------------------------------------------------------------------90
@@ -89,7 +92,15 @@ namespace scheduler
             {
                return Strategy::select(pool, enabled, task_nr);
             }
-            return result_t(Status::DEADLOCK, -1);
+            
+            // Return deadlocks
+            deadlock_t deadlock;
+            std::transform(pool.tasks_cbegin(), pool.tasks_cend(), std::back_inserter(deadlock),
+                           [] (const auto& task) 
+                           {
+                              return task.second;
+                           });
+            throw deadlock_exception(deadlock);
          }
          return result_t(Status::DONE, -1);
       }

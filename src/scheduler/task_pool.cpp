@@ -106,6 +106,13 @@ namespace scheduler
    
    //-------------------------------------------------------------------------------------
    
+   TaskPool::Tasks::const_iterator TaskPool::tasks_cbegin() const
+   {
+      return mTasks.cbegin();
+   }
+   
+   //-------------------------------------------------------------------------------------
+   
    TaskPool::Tasks::const_iterator TaskPool::tasks_cend() const
    {
       return mTasks.cend();

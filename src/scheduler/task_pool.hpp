@@ -1,7 +1,7 @@
 #pragma once
 
 // SCHEDULER
-#include "data_race.hpp"
+#include "concurrency_error.hpp"
 #include "object_state.hpp"
 
 // PROGRAM_MODEL
@@ -125,7 +125,8 @@ namespace scheduler
       Tasks::const_iterator task(const Thread::tid_t& tid) const;
       
       //----------------------------------------------------------------------------------
-        
+      
+      Tasks::const_iterator tasks_cbegin() const;
       Tasks::const_iterator tasks_cend() const;
       
       //----------------------------------------------------------------------------------
