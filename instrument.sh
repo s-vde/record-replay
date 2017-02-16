@@ -17,9 +17,11 @@ input_program=`echo $4`
 input_filename=$(basename "${input_program}")
 input_extension="${input_filename##*.}"
 
-output_dir=`echo $5`
+nr_threads=`echo $5`
 
-custom_strategies=`echo $6`
+output_dir=`echo $6`
+
+custom_strategies=`echo $7`
 if [ -z "${custom_strategies// }" ]; then
    custom_strategies=${record_replay_base}/src/scheduler/strategies/custom
 fi
@@ -28,7 +30,7 @@ fi
 echo Instrumenting ${input_program}
 ###
 
-compiler_flags="-O0 -g -pthread -emit-llvm "
+compiler_flags="-O0 -g -DNR_THREADS=${nr_threads} -pthread -emit-llvm "
 
 if [ ${input_extension} == "c" ]; then
    compiler=${llvm_bin}/clang
