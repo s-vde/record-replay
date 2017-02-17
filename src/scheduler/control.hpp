@@ -7,6 +7,7 @@
 #include "binary_sem.hpp"
 
 // STL
+#include <exception>
 #include <unordered_map>
 
 //--------------------------------------------------------------------------------------90
@@ -25,12 +26,20 @@ namespace scheduler
    class Control
    {
    public:
+      
+      //----------------------------------------------------------------------------------
+      
+      struct permission_denied : public std::runtime_error
+      {
+         permission_denied() : std::runtime_error("Control::permission_denied") {}
+         
+      }; // end struct permission_denied
         
       //----------------------------------------------------------------------------------
       
       /// @brief Default constructor.
       
-      Control();
+      Control() = default;
       
       //----------------------------------------------------------------------------------
       

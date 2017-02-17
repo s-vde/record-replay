@@ -1,18 +1,14 @@
 
 #include "control.hpp"
 
+// UTILS
+#include "debug.hpp"
+
 // STL
 #include <assert.h>
 
 namespace scheduler
 {
-   //-------------------------------------------------------------------------------------
-   
-   Control::Control()
-   : mHandles(Handles())
-   , mMutex()
-   , mOwner() { }
-
    //-------------------------------------------------------------------------------------
    
    void Control::register_thread(const Thread::tid_t& tid)
@@ -40,23 +36,25 @@ namespace scheduler
     
    void Control::grant_execution_right(const Thread::tid_t& tid)
    {
-      if (is_owner())
+      if (!is_owner())
       {
-         handle(tid).post(true, BinarySem::BroadcastMode::NOTIFY_ONE);
+         throw permission_denied();
       }
+      handle(tid).post(true, BinarySem::BroadcastMode::NOTIFY_ONE);
    }
    
    //-------------------------------------------------------------------------------------
 
    void Control::grant_execution_right_all()
    {
-      if (is_owner())
+      if (!is_owner())
       {
-         std::lock_guard<std::mutex> guard(mMutex);
-         for (auto& handle : mHandles)
-         {
-            handle.second.post(true, BinarySem::BroadcastMode::NOTIFY_ONE);
-         }
+         throw permission_denied();
+      }
+      std::lock_guard<std::mutex> guard(mMutex);
+      for (auto& handle : mHandles)
+      {
+         handle.second.post(true, BinarySem::BroadcastMode::NOTIFY_ONE);
       }
    }
    

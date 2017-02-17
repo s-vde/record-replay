@@ -222,7 +222,7 @@ namespace scheduler
    // on mPool, but this is not checked/enforced.
    void Scheduler::run()
    {
-      mControl.set_owner(mThread.get_id()); // mThread.get_id() == std::this_thread::get_id()
+      mControl.set_owner(std::this_thread::get_id());
       wait_all_registered();
       mPool.wait_enabled_collected();
 
@@ -259,6 +259,11 @@ namespace scheduler
             write_to_stream(std::cout, deadlock.get());
             set_status(Execution::Status::DEADLOCK);
             break;
+         }
+         catch(const Control::permission_denied& e)
+         {
+            std::cout << e.what() << "\n";
+            throw;
          }
       }
       close(E);
