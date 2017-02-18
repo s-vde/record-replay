@@ -92,13 +92,6 @@ namespace scheduler
 
       //----------------------------------------------------------------------------------
 
-      /// @brief If the program runs Scheduler-controlled, this function calls mPool.yield
-      /// with the calling thread's Scheduler-internal id.
-
-      void yield();
-
-      //----------------------------------------------------------------------------------
-
       /// @brief If the program runs Scheduler-controlled, this function updates the
       /// status of the calling thread in mPool.
 
@@ -292,8 +285,6 @@ void wrapper_post_instruction(int operation, void* operand,
 
 void wrapper_post_memory_instruction(int operation, void* operand, bool is_atomic,
                                      const char* file_name, unsigned int line_number);
-
-void wrapper_yield();
 
 void wrapper_finish();
 

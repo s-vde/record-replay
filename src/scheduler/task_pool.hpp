@@ -85,7 +85,7 @@ namespace scheduler
       
       //----------------------------------------------------------------------------------
     
-      /// @brief Handles a yield of the currently executing Thread.
+      /// @brief Handles a yield if tid is the currently executing Thread.
       
       void yield(const Thread::tid_t& tid);
       

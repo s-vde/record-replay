@@ -47,10 +47,11 @@ namespace scheduler
    void TaskPool::yield(const Thread::tid_t& tid)
    {
       std::lock_guard<std::mutex> guard(mMutex);
-      DEBUGF_SYNC("Taskpool", "yield", tid, "\n");
-      /// @pre mCurrentTask->tid == tid
-      assert(mCurrentTask != nullptr && mCurrentTask->tid() == tid);
-      update_object_yield(*mCurrentTask);
+      if (mCurrentTask && mCurrentTask->tid() == tid)
+      {
+         DEBUGF_SYNC("Taskpool", "yield", tid, "\n");
+         update_object_yield(*mCurrentTask);
+      }
    }
    
    //-------------------------------------------------------------------------------------

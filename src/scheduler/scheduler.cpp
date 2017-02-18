@@ -94,10 +94,14 @@ namespace scheduler
          try
          {
             const Thread::tid_t tid = find_tid(pthread_self());
+            
+            mPool.yield(tid);
+            
             Instruction instr(tid, static_cast<Object::Op>(op), obj, is_atomic);
             instr.add_meta_data({ file_name, line_number });
             DEBUGF(thread_str(tid), "post_task", instr, "\n");
             mPool.post(tid, instr);
+            
             DEBUGFNL(thread_str(tid), "wait_for_turn", "", "");
             mControl.wait_for_turn(tid);
          }
@@ -110,30 +114,14 @@ namespace scheduler
 
    //-------------------------------------------------------------------------------------
 
-   void Scheduler::yield()
-   {
-      if (runs_controlled())
-      {
-         try
-         {
-            const Thread::tid_t tid = find_tid(pthread_self());
-            DEBUGFNL(thread_str(tid), "yield", "", "");
-            mPool.yield(tid);
-         }
-         catch(const unregistered_thread&)
-         {
-            DEBUGFNL("[unregistered_thread]", "yield", "", "");
-         }
-      }
-   }
-
-   //-------------------------------------------------------------------------------------
-
    void Scheduler::finish()
    {
       if (runs_controlled())
       {
          const Thread::tid_t tid = find_tid(pthread_self());
+         
+         mPool.yield(tid);
+         
          DEBUGFNL(thread_str(tid), "finish", "", "");
          mPool.set_status_protected(tid, Thread::Status::FINISHED);
       }
@@ -455,13 +443,6 @@ void wrapper_post_memory_instruction(int operation, void* operand, bool is_atomi
 {
    the_scheduler.post_task(operation, program_model::Object(operand), is_atomic,
                            file_name, line_number);
-}
-
-//----------------------------------------------------------------------------------------
-
-void wrapper_yield()
-{
-   the_scheduler.yield();
 }
 
 //----------------------------------------------------------------------------------------

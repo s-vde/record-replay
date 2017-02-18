@@ -35,8 +35,6 @@ void wrap::operator()(const memory_instruction& instruction)
 {
    auto arguments = construct_arguments(instruction);
    llvm::CallInst::Create(m_functions.Wrapper_post_memory_instruction(), arguments, "", &*m_instruction_it);
-   ++m_instruction_it;
-   llvm::CallInst::Create(m_functions.Wrapper_yield(), {}, "", &*m_instruction_it);
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -45,8 +43,6 @@ void wrap::operator()(const lock_instruction& instruction)
 {
    auto arguments = construct_arguments(instruction);
    llvm::CallInst::Create(m_functions.Wrapper_post_instruction(), arguments, "", &*m_instruction_it);
-   ++m_instruction_it;
-   llvm::CallInst::Create(m_functions.Wrapper_yield(), {}, "", &*m_instruction_it);
 }
 
 //--------------------------------------------------------------------------------------------------

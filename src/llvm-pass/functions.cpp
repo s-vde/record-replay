@@ -86,12 +86,6 @@ namespace concurrency_passes {
          add_wrapper_prototype(module, "wrapper_post_memory_instruction", type, attributes);
       }
       
-      // wrapper_yield
-      {
-         auto* type = FunctionType::get(void_type, false);
-         add_wrapper_prototype(module, "wrapper_yield", type, attributes);
-      }
-      
       // wrapper_finish
       {
          auto* type = FunctionType::get(void_type, false);
@@ -145,13 +139,6 @@ namespace concurrency_passes {
    llvm::Function* Functions::Wrapper_wait_registered() const
    {
       return m_wrappers.find("wrapper_wait_registered")->second;
-   }
-   
-   //-----------------------------------------------------------------------------------------------
-    
-   llvm::Function* Functions::Wrapper_yield() const
-   {
-      return m_wrappers.find("wrapper_yield")->second;
    }
    
    //-----------------------------------------------------------------------------------------------
