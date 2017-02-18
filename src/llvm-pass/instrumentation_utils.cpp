@@ -68,7 +68,6 @@ namespace instrumentation_utils
                                    llvm::Function* F,
                                    const ParamVec& NewParams)
    {
-      PRINTF(outputname(), "create_function", F->getName().str() << ", " << name, "\n");
       if (M.getFunction(name) == NULL)
       {
          llvm::Function* NewF = llvm::cast<llvm::Function>(
@@ -101,7 +100,6 @@ namespace instrumentation_utils
                                   const llvm::ArrayRef<llvm::Value*>& args,
                                   const std::string& call_name)
    {
-      PRINTF(outputname(), "add_call_begin", F->getName() << ", " << callee->getName(), "\n");
       llvm::IRBuilder<> builder(&*(llvm::inst_begin(F)));
       return builder.CreateCall(callee, args, call_name);
    }
@@ -113,7 +111,6 @@ namespace instrumentation_utils
                                 const llvm::ArrayRef<llvm::Value*>& args,
                                 const std::string& call_name)
    {
-      PRINTF(outputname(), "add_call_end", F->getName() << ", " << callee->getName(), "\n");
       llvm::IRBuilder<> builder(&*(--((--(F->end()))->end())));
       return builder.CreateCall(callee, args, call_name);
    }
@@ -143,7 +140,6 @@ namespace instrumentation_utils
                      llvm::Function* newcallee,
                      ValueVec NewArgs)           // by value
    {
-      PRINTF(outputname(), "replace_call", callee->getName() << "," << newcallee->getName(), "\n");
       const unsigned nr_args = call->getNumArgOperands();
       for (unsigned int i = 0; i < nr_args; ++i)
       {
@@ -156,33 +152,6 @@ namespace instrumentation_utils
       call->replaceAllUsesWith(new_call);
       // @todo call->dropAllReferences();?
       call->eraseFromParent();
-   }
-   
-   //-------------------------------------------------------------------------------------
-	
-   boost::optional<std::string> get_mangled_name(const llvm::Module& M,
-                                                 const std::string& namespc,
-                                                 const std::string& class_name,
-                                                 const std::string& name)
-   {
-      std::size_t pos = 0;
-      for (auto fun = M.getFunctionList().begin(); fun != M.getFunctionList().end(); ++fun)
-      {
-         const std::string& mangled = fun->getName().str();
-         pos = 0;
-         if ((pos = mangled.find(namespc, pos)) != std::string::npos)
-         {
-            if ((pos = mangled.find(class_name, pos)) != std::string::npos)
-            {
-               if ((pos = mangled.find(name, pos)) != std::string::npos)
-               {
-                  PRINT(name << " found with mangled name " << mangled << "\n");
-                  return boost::make_optional(mangled);
-               }
-            }
-         }
-      }
-      return boost::optional<std::string>();
    }
    
    //-------------------------------------------------------------------------------------

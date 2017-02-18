@@ -40,14 +40,12 @@ namespace concurrency_passes {
     
    llvm::Function* LightWeightPass::create_program_main(llvm::Module& module)
    {
-      PRINTF(outputname(), "create_program_main", "", "\n");
       llvm::Function* main = module.getFunction("main");
       if (main)
       {
          llvm::Function* program_main = instrumentation_utils::create_function(module, "program_main", main, {});
          program_main->getBasicBlockList().splice(program_main->begin(),
                                                   main->getBasicBlockList());
-         program_main->dump();
          return program_main;
       }
       throw std::invalid_argument("Module does not contain function main");
@@ -58,8 +56,6 @@ namespace concurrency_passes {
    void LightWeightPass::restore_main(llvm::Module& module)
    {
       using namespace llvm;
-      
-      PRINTF(outputname(), "restore_main", "", "\n");
       Function* main = module.getFunction("main");
       if (main)
       {
@@ -67,7 +63,6 @@ namespace concurrency_passes {
          CallInst::Create(module.getFunction("program_main"), { }, "", BB);
          ConstantInt* return_value = ConstantInt::get(IntegerType::getInt32Ty(module.getContext()), 0, true);
          ReturnInst::Create(module.getContext(), return_value, BB);
-         main->dump();
          return;
       }
       throw std::invalid_argument("Module does not contain function main");
@@ -77,11 +72,9 @@ namespace concurrency_passes {
 
    void LightWeightPass::instrument_pthread_create_calls(llvm::Function* program_main)
    {
-      PRINTF(outputname(), "instrument_pthread_functions", "", "\n");
       auto PthreadCreateCalls = instrumentation_utils::call_instructions(program_main, "pthread_create");
       for (const auto call : PthreadCreateCalls)
       {
-         PRINT("\tptread_create(" << call->getArgOperand(2)->getName().str() << ") called by main\n");
          instrumentation_utils::replace_call(
             call,
             mFunctions.Function_pthread_create(),
@@ -96,7 +89,6 @@ namespace concurrency_passes {
     
    void LightWeightPass::instrument_start_routines()
    {
-      PRINTF(outputname(), "instrument_start_routines", "", "\n");
       for (auto start_routine : mStartRoutines)
       {
          instrumentation_utils::add_call_begin(
@@ -114,7 +106,7 @@ namespace concurrency_passes {
                                                  const visible_instruction_t& visible_instruction)
    {
       //
-      boost::apply_visitor(concurrency_passes::dump(), visible_instruction);
+      // boost::apply_visitor(concurrency_passes::dump(), visible_instruction);
       //
       auto wrapper = concurrency_passes::wrap(function.getContext(), mFunctions, inst_it);
       visible_instruction.apply_visitor(wrapper);
@@ -148,7 +140,6 @@ namespace concurrency_passes {
    
    void LightWeightPass::runOnThreadExit(llvm::Function& function, llvm::inst_iterator inst_it)
    {
-      PRINTF(outputname(), "runOnThreadExit", "", "\n");
       llvm::IRBuilder<> builder(&*inst_it);
       builder.CreateCall(mFunctions.Wrapper_finish(), {}, "");
    }

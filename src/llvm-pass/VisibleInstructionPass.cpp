@@ -49,7 +49,6 @@ bool VisibleInstructionPass::runOnFunction(llvm::Function& function)
 
    if (!isBlackListed(function))
    {
-      llvm::errs() << "\n--------------------\nrunOnFunction(" << function.getName() << ")\n";
       llvm_visible_instruction::creator creator;
       for (auto inst_it = inst_begin(function); inst_it != inst_end(function); ++inst_it)
       {
@@ -70,10 +69,6 @@ bool VisibleInstructionPass::runOnFunction(llvm::Function& function)
             }
          }
       }
-   }
-   else
-   {
-      llvm::errs() << "\n--------------------\n" << function.getName() << " is blacklisted\n";
    }
    return false;
 }

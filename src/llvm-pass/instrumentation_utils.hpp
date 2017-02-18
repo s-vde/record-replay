@@ -101,13 +101,6 @@ namespace instrumentation_utils
                      ValueVec NewArgs={});
    
    //-------------------------------------------------------------------------------------
-	
-   boost::optional<std::string> get_mangled_name(const llvm::Module& M,
-                                                 const std::string& namespc,
-                                                 const std::string& class_name,
-                                                 const std::string& name);
-   
-   //-------------------------------------------------------------------------------------
     
    std::string outputname();
    
