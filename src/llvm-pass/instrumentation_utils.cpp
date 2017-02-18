@@ -44,7 +44,24 @@ namespace instrumentation_utils
       throw std::invalid_argument("Function " + unmangled_name + " not found in module");
    }
    
-   //-------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------
+
+llvm::Value* get_or_create_global_string_ptr(llvm::Module& module, llvm::Instruction& before, 
+                                             const std::string& variable_name, 
+                                             const std::string& str)
+{
+   llvm::IRBuilder<> builder(&before);
+   llvm::GlobalVariable* global_variable = module.getGlobalVariable(variable_name, true);
+   if (global_variable)
+   {
+      llvm::Value* zero = llvm::ConstantInt::get(llvm::Type::getInt32Ty(module.getContext()), 0);
+      return builder.CreateInBoundsGEP(global_variable->getValueType(), global_variable, 
+                                       { zero, zero }, variable_name);
+   }
+   return builder.CreateGlobalStringPtr(str, variable_name);
+}
+
+//--------------------------------------------------------------------------------------------------
    
    llvm::FunctionType* create_signature(llvm::Function* F, const ParamVec& NewParams)
    {

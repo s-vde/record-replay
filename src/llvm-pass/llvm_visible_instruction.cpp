@@ -3,6 +3,7 @@
 
 // LLVM_PASS
 #include "functions.hpp"
+#include "instrumentation_utils.hpp"
 
 // PROGRAM_MODEL
 #include "visible_instruction_io.hpp"
@@ -22,8 +23,8 @@ namespace concurrency_passes {
 
 //--------------------------------------------------------------------------------------------------
 
-wrap::wrap(llvm::LLVMContext& context, Functions& functions, llvm::inst_iterator& instruction_it)
-: m_context(context)
+wrap::wrap(llvm::Module& module, Functions& functions, llvm::inst_iterator& instruction_it)
+: m_module(module)
 , m_functions(functions)
 , m_instruction_it(instruction_it)
 {
@@ -50,9 +51,9 @@ void wrap::operator()(const lock_instruction& instruction)
 auto wrap::construct_arguments(const memory_instruction& instruction) -> arguments_t
 {
    using namespace llvm;
-   Value* arg_operation = ConstantInt::get(m_context, APInt(32, static_cast<int>(instruction.operation()), false));
+   Value* arg_operation = ConstantInt::get(m_module.getContext(), APInt(32, static_cast<int>(instruction.operation()), false));
    Value* arg_operand = construct_operand(instruction.operand());
-   Value* arg_is_atomic = ConstantInt::get(m_context, APInt(8, (instruction.is_atomic() ? 1 : 0), false));
+   Value* arg_is_atomic = ConstantInt::get(m_module.getContext(), APInt(8, (instruction.is_atomic() ? 1 : 0), false));
    Value* arg_file_name = construct_file_name(instruction.meta_data().file_name);
    Value* arg_line_number = construct_line_number(instruction.meta_data().line_number);
    return { arg_operation, arg_operand, arg_is_atomic, arg_file_name, arg_line_number };
@@ -63,7 +64,7 @@ auto wrap::construct_arguments(const memory_instruction& instruction) -> argumen
 auto wrap::construct_arguments(const lock_instruction& instruction) -> arguments_t
 {
    using namespace llvm;
-   Value* arg_operation = ConstantInt::get(m_context, APInt(32, static_cast<int>(instruction.operation()), false));
+   Value* arg_operation = ConstantInt::get(m_module.getContext(), APInt(32, static_cast<int>(instruction.operation()), false));
    Value* arg_operand = construct_operand(instruction.operand());
    Value* arg_file_name = construct_file_name(instruction.meta_data().file_name);
    Value* arg_line_number = construct_line_number(instruction.meta_data().line_number);
@@ -82,15 +83,16 @@ llvm::Value* wrap::construct_operand(const operand_t& operand)
 
 llvm::Value* wrap::construct_file_name(const std::string& file_name)
 {
-   llvm::IRBuilder<> builder(&*m_instruction_it);
-   return builder.CreateGlobalStringPtr(file_name);
+   std::string global_name = "_recrep_file_name_" + file_name;
+   return instrumentation_utils::get_or_create_global_string_ptr(m_module, *m_instruction_it,
+                                                                 global_name, file_name);
 }
 
 //--------------------------------------------------------------------------------------------------
 
 llvm::Value* wrap::construct_line_number(unsigned int line_number)
 {
-   return llvm::ConstantInt::get(m_context, llvm::APInt(32, line_number, false));
+   return llvm::ConstantInt::get(m_module.getContext(), llvm::APInt(32, line_number, false));
 }
 
 //--------------------------------------------------------------------------------------------------

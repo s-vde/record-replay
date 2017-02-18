@@ -22,7 +22,7 @@
 namespace llvm
 {
    class Instruction;
-   class LLVMContext;
+   class Module;
    class Value;
 }
 
@@ -54,7 +54,7 @@ struct wrap : public boost::static_visitor<void>
 {
    using arguments_t = std::vector<llvm::Value*>;
 
-   wrap(llvm::LLVMContext& context, Functions& functions, llvm::inst_iterator& instruction_it);
+   wrap(llvm::Module& module, Functions& functions, llvm::inst_iterator& instruction_it);
 
    void operator()(const memory_instruction& instruction);
    void operator()(const lock_instruction& instruction);
@@ -68,7 +68,7 @@ private:
    llvm::Value* construct_file_name(const std::string& file_name);
    llvm::Value* construct_line_number(unsigned int line_number);
 
-   llvm::LLVMContext& m_context;
+   llvm::Module& m_module;
    Functions& m_functions;
    llvm::inst_iterator& m_instruction_it;
 

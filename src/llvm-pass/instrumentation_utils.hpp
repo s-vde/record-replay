@@ -23,6 +23,7 @@ namespace llvm
    class Constant;
    class Function;
    class FunctionType;
+   class Instruction;
    class Module;
    class Value;
    class Type;
@@ -47,8 +48,14 @@ namespace instrumentation_utils
    
    llvm::Function* get_function_with_unmangled_name(llvm::Module& module,
                                                     const std::string& unmangled_name);
+                        
+//--------------------------------------------------------------------------------------------------
+
+llvm::Value* get_or_create_global_string_ptr(llvm::Module& module, llvm::Instruction& before, 
+                                             const std::string& variable_name, 
+                                             const std::string& str);
    
-   //-------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------
     
    /// @brief Creates function signature F->ReturnType(NewParams, F->Params).
 

@@ -42,7 +42,8 @@ namespace concurrency_passes {
       //----------------------------------------------------------------------------------
       
       void onStartOfPass(llvm::Module& module) override;
-      void runOnVisibleInstruction(llvm::Function& function,
+      void runOnVisibleInstruction(llvm::Module& module, 
+                                   llvm::Function& function,
                                    llvm::inst_iterator inst_it,
                                    const visible_instruction_t& visible_instruction) override;
       void runOnThreadExit(llvm::Function& function, llvm::inst_iterator inst_it) override;

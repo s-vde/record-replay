@@ -24,9 +24,9 @@ bool VisibleInstructionPass::runOnModule(llvm::Module& module)
    {
       onStartOfPass(module);
       auto& functions = module.getFunctionList();
-      std::for_each(functions.begin(), functions.end(), [this](auto& function)
+      std::for_each(functions.begin(), functions.end(), [this, &module](auto& function)
       {
-         runOnFunction(function);
+         runOnFunction(module, function);
       });
       onEndOfPass(module);
       
@@ -43,7 +43,7 @@ bool VisibleInstructionPass::runOnModule(llvm::Module& module)
    
 //--------------------------------------------------------------------------------------------------
    
-bool VisibleInstructionPass::runOnFunction(llvm::Function& function)
+bool VisibleInstructionPass::runOnFunction(llvm::Module& module, llvm::Function& function)
 {
    using namespace llvm;
 
@@ -56,7 +56,7 @@ bool VisibleInstructionPass::runOnFunction(llvm::Function& function)
          const auto visible_instruction = creator.visit(instruction);
          if (visible_instruction)
          {
-            runOnVisibleInstruction(function, inst_it, *visible_instruction);
+            runOnVisibleInstruction(module, function, inst_it, *visible_instruction);
             ++m_nr_visible_instructions;
          }
          /// @todo Include pthread_exit as visible instruction

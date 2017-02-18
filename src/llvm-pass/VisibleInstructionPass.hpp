@@ -38,7 +38,8 @@ public:
    VisibleInstructionPass(char& ID);
       
    virtual void onStartOfPass(llvm::Module& module) = 0;
-   virtual void runOnVisibleInstruction(llvm::Function& function,
+   virtual void runOnVisibleInstruction(llvm::Module& module, 
+                                        llvm::Function& function,
                                         llvm::inst_iterator inst_it,
                                         const visible_instruction_t& visible_instruction) = 0;
    virtual void runOnThreadExit(llvm::Function& function, llvm::inst_iterator inst_it) = 0;
@@ -51,7 +52,7 @@ protected:
 private:
       
    bool runOnModule(llvm::Module& module) override;
-   bool runOnFunction(llvm::Function& function);
+   bool runOnFunction(llvm::Module& module, llvm::Function& function);
    
    virtual bool isBlackListed(const llvm::Function& function) const;
       
