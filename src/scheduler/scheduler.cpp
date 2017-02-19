@@ -57,31 +57,18 @@ namespace scheduler
                                void* args)
    {
       std::lock_guard<std::mutex> guard(mRegMutex);
-      // Create the thread
-      int ret = pthread_create(pid, attr, start_routine, args);
       // Register the thread
       const Thread::tid_t tid = mNrRegistered;
-      mThreads.insert(TidMap::value_type(*pid, tid));
+      ++mNrRegistered;
+      mThreads.insert(TidMap::value_type(pid, tid));
       mPool.register_thread(tid);
       mControl.register_thread(tid);
-      DEBUGFNL(thread_str(tid), "spawn_thread", pid, "");
-      ++mNrRegistered;
+      // Create the thread
+      int ret = pthread_create(pid, attr, start_routine, args);
+      DEBUGF_SYNC("[parent]\t", "spawn_thread", "(tid=" << tid << ", pid=" << pid << ")", "\n");
       // cond SIGNAL mRegCond
       mRegCond.notify_all();
       return ret;
-   }
-
-   //-------------------------------------------------------------------------------------
-
-   void Scheduler::wait_registered()
-   {
-      std::unique_lock<std::mutex> ul(mRegMutex);
-      // cond WAIT mRegCond
-      mRegCond.wait(ul, [this] ()
-      {
-         DEBUGFNL(thread_str(pthread_self()), "wait_registered", "", "");
-         return mThreads.find(pthread_self()) != mThreads.end();
-      });
    }
 
    //-------------------------------------------------------------------------------------
@@ -149,10 +136,12 @@ namespace scheduler
    Thread::tid_t Scheduler::find_tid(const pthread_t& pid)
    {
       std::lock_guard<std::mutex> guard(mRegMutex);
-      auto it = mThreads.find(pid);
-      if (it != mThreads.end())
+      for (const auto& thr : mThreads)
       {
-         return it->second;
+         if (*thr.first == pid)
+         {
+            return thr.second;
+         }
       }
       throw unregistered_thread();
    }
@@ -418,13 +407,6 @@ int wrapper_spawn_thread(pthread_t* pid,
                          void* args)
 {
    return the_scheduler.spawn_thread(pid, nullptr, start_routine, args);
-}
-
-//----------------------------------------------------------------------------------------
-
-void wrapper_wait_registered()
-{
-   the_scheduler.wait_registered();
 }
 
 //----------------------------------------------------------------------------------------

@@ -49,21 +49,6 @@ namespace concurrency_passes {
             mFunctions.Wrapper_spawn_thread(),
             {}
          );
-         mStartRoutines.insert(llvm::cast<llvm::Function>(call->getArgOperand(2)));
-      }
-   }
-   
-   //-------------------------------------------------------------------------------------
-    
-   void LightWeightPass::instrument_start_routines()
-   {
-      for (auto start_routine : mStartRoutines)
-      {
-         instrumentation_utils::add_call_begin(
-            start_routine,
-            mFunctions.Wrapper_wait_registered(),
-            {}
-         );
       }
    }
    
@@ -94,7 +79,6 @@ namespace concurrency_passes {
    void LightWeightPass::onEndOfPass(llvm::Module& module)
    {
       instrument_pthread_create_calls(module.getFunction("main"));
-      instrument_start_routines();
    }
    
    //-------------------------------------------------------------------------------------

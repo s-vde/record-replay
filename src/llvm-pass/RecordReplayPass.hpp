@@ -62,24 +62,15 @@ namespace concurrency_passes {
       using FunctionSet = std::set<llvm::Function*>;
       
       //----------------------------------------------------------------------------------
-        
-      FunctionSet mStartRoutines;
+       
       Functions mFunctions;
       
       //----------------------------------------------------------------------------------
 
       /// @brief Replaces all calls to pthread_create(args) in main with calls to
-      /// Wrapper_spawn_thread(args) and adds the start routine from each call to the set
-      /// mStartRoutines.
+      /// Wrapper_spawn_thread(args).
 
       void instrument_pthread_create_calls(llvm::Function* main);
-      
-      //----------------------------------------------------------------------------------
-
-      /// @brief Adds a call to Wrapper_wait_registered as a first instruction in every
-      /// start routine in mStartRoutines.
-      
-      void instrument_start_routines();
       
       //----------------------------------------------------------------------------------
       

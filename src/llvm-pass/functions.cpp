@@ -61,12 +61,6 @@ namespace concurrency_passes {
          add_wrapper_prototype(module, "wrapper_spawn_thread", type, attributes);
       }
       
-      // wrapper_wait_registered
-      {
-         auto* type = FunctionType::get(void_type, false);
-         add_wrapper_prototype(module, "wrapper_wait_registered", type, attributes);
-      }
-      
       // wrapper_post_instruction
       {
          auto* type = FunctionType::get(void_type,
@@ -132,13 +126,6 @@ namespace concurrency_passes {
    llvm::Function* Functions::Wrapper_spawn_thread() const
    {
       return m_wrappers.find("wrapper_spawn_thread")->second;
-   }
-   
-   //-----------------------------------------------------------------------------------------------
-    
-   llvm::Function* Functions::Wrapper_wait_registered() const
-   {
-      return m_wrappers.find("wrapper_wait_registered")->second;
    }
    
    //-----------------------------------------------------------------------------------------------

@@ -35,7 +35,7 @@ namespace scheduler
 
       //----------------------------------------------------------------------------------
 
-      using TidMap = std::unordered_map<pthread_t,const Thread::tid_t>;
+      using TidMap = std::unordered_map<pthread_t*,const Thread::tid_t>;
 
       //----------------------------------------------------------------------------------
 
@@ -73,13 +73,6 @@ namespace scheduler
                        const pthread_attr_t* attr,
                        void* (*start_routine)(void*),
                        void* args);
-
-      //----------------------------------------------------------------------------------
-
-      /// @brief Lets the calling thread wait until its registration with the Scheduler is
-      /// complete.
-
-      void wait_registered();
 
       //----------------------------------------------------------------------------------
 
@@ -277,8 +270,6 @@ static scheduler::Scheduler the_scheduler;
 extern "C"
 {
 int wrapper_spawn_thread(pthread_t* pid, const pthread_attr_t* attr, void* (*start_routine)(void*), void* args);
-
-void wrapper_wait_registered();
 
 void wrapper_post_instruction(int operation, void* operand,
                               const char* file_name, unsigned int line_number);

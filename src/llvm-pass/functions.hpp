@@ -38,7 +38,6 @@ namespace concurrency_passes {
       llvm::Function* Wrapper_post_instruction() const;
       llvm::Function* Wrapper_post_memory_instruction() const;
       llvm::Function* Wrapper_spawn_thread() const;
-      llvm::Function* Wrapper_wait_registered() const;
       
       llvm::Function* Function_pthread_create() const;
 		
