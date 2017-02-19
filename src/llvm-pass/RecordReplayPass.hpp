@@ -68,27 +68,11 @@ namespace concurrency_passes {
       
       //----------------------------------------------------------------------------------
 
-      /// @brief Adds a new function named program_main to llvm::Module M with main's body
-      /// spliced into it. Returns a pointer to the newly created function.
-      
-      llvm::Function* create_program_main(llvm::Module& module);
-      
-      //----------------------------------------------------------------------------------
-
-      /// @brief Adds a call to Scheduler's constructor, a call to program_main, and a
-      /// call to Scheduler's destructor to main, followed by an instruction returning 0.
-      /// @note Assumes that main does not take arguments that need to be forwarded to
-      /// program_main.
-
-      void restore_main(llvm::Module& module);
-      
-      //----------------------------------------------------------------------------------
-
-      /// @brief Replaces all calls to pthread_create(args) in program_main with calls to
+      /// @brief Replaces all calls to pthread_create(args) in main with calls to
       /// Wrapper_spawn_thread(args) and adds the start routine from each call to the set
       /// mStartRoutines.
 
-      void instrument_pthread_create_calls(llvm::Function* program_main);
+      void instrument_pthread_create_calls(llvm::Function* main);
       
       //----------------------------------------------------------------------------------
 

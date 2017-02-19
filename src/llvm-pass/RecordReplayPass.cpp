@@ -37,42 +37,10 @@ namespace concurrency_passes {
    }
    
    //-------------------------------------------------------------------------------------
-    
-   llvm::Function* LightWeightPass::create_program_main(llvm::Module& module)
-   {
-      llvm::Function* main = module.getFunction("main");
-      if (main)
-      {
-         llvm::Function* program_main = instrumentation_utils::create_function(module, "program_main", main, {});
-         program_main->getBasicBlockList().splice(program_main->begin(),
-                                                  main->getBasicBlockList());
-         return program_main;
-      }
-      throw std::invalid_argument("Module does not contain function main");
-   }
-   
-   //-------------------------------------------------------------------------------------
 
-   void LightWeightPass::restore_main(llvm::Module& module)
+   void LightWeightPass::instrument_pthread_create_calls(llvm::Function* main)
    {
-      using namespace llvm;
-      Function* main = module.getFunction("main");
-      if (main)
-      {
-         BasicBlock* BB = BasicBlock::Create(module.getContext(), "", main, nullptr);
-         CallInst::Create(module.getFunction("program_main"), { }, "", BB);
-         ConstantInt* return_value = ConstantInt::get(IntegerType::getInt32Ty(module.getContext()), 0, true);
-         ReturnInst::Create(module.getContext(), return_value, BB);
-         return;
-      }
-      throw std::invalid_argument("Module does not contain function main");
-   }
-   
-   //-------------------------------------------------------------------------------------
-
-   void LightWeightPass::instrument_pthread_create_calls(llvm::Function* program_main)
-   {
-      auto PthreadCreateCalls = instrumentation_utils::call_instructions(program_main, "pthread_create");
+      auto PthreadCreateCalls = instrumentation_utils::call_instructions(main, "pthread_create");
       for (const auto call : PthreadCreateCalls)
       {
          instrumentation_utils::replace_call(
@@ -125,16 +93,8 @@ namespace concurrency_passes {
    
    void LightWeightPass::onEndOfPass(llvm::Module& module)
    {
-      try
-      {
-         auto program_main = create_program_main(module);
-         restore_main(module);
-         instrument_pthread_create_calls(program_main);
-         instrument_start_routines();
-      }
-      catch(const std::invalid_argument& e)
-      {
-      }
+      instrument_pthread_create_calls(module.getFunction("main"));
+      instrument_start_routines();
    }
    
    //-------------------------------------------------------------------------------------

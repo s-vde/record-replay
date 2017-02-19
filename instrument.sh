@@ -51,7 +51,9 @@ cd ${here}
 
 test -d ${output_dir} || mkdir -p ${output_dir}
 ${compiler} ${compiler_flags} -c ${input_program} -o ${output_dir}/${input_filename}.bc
+echo [record-replay] run instrumentation pass
 ${llvm_bin}/opt -S -load ${pass_build} ${pass_name} < ${output_dir}/${input_filename}.bc > ${output_dir}/${input_filename}.instrumented.bc
+echo [record-replay] link with scheduler library
 ${compiler} ${output_dir}/${input_filename}.instrumented.bc \
    ${scheduler_build} -rpath ${record_replay_base}/build/src/scheduler/ \
    -o ${output_dir}/"${input_filename%.*}"
