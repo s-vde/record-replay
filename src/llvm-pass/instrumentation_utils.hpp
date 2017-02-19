@@ -24,6 +24,7 @@ namespace llvm
    class Function;
    class FunctionType;
    class Instruction;
+   class InvokeInst;
    class Module;
    class Value;
    class Type;
@@ -102,10 +103,16 @@ llvm::Value* get_or_create_global_string_ptr(llvm::Module& module, llvm::Instruc
    /// @brief Replace the given call to Function callee(args) with a call to
    /// newcallee(NewArgs, args).
 
-   void replace_call(llvm::CallInst* call,
-                     llvm::Function* callee,
-                     llvm::Function* newcallee,
-                     ValueVec NewArgs={});
+   void replace_call(llvm::CallInst* call, llvm::Function* callee,
+                     llvm::Function* newcallee, ValueVec NewArgs={});
+                     
+   //-------------------------------------------------------------------------------------
+                      
+   /// @brief Replace the given invokation of Function callee(args) with an invokation of
+   /// newcallee(NewArgs, args).
+
+   void replace_invoke(llvm::InvokeInst* invoke, llvm::Function* callee,
+                       llvm::Function* newcallee, ValueVec NewArgs={});
    
    //-------------------------------------------------------------------------------------
     

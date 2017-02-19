@@ -105,12 +105,19 @@ namespace scheduler
    {
       if (runs_controlled())
       {
-         const Thread::tid_t tid = find_tid(pthread_self());
+         try
+         {
+            const Thread::tid_t tid = find_tid(pthread_self());
          
-         mPool.yield(tid);
+            mPool.yield(tid);
          
-         DEBUGFNL(thread_str(tid), "finish", "", "");
-         mPool.set_status_protected(tid, Thread::Status::FINISHED);
+            DEBUGFNL(thread_str(tid), "finish", "", "");
+            mPool.set_status_protected(tid, Thread::Status::FINISHED);
+         } 
+         catch(const unregistered_thread&)
+         {
+            DEBUGF_SYNC("[unregistered_thread]", "finish", "", "\n");
+         }
       }
    }
 

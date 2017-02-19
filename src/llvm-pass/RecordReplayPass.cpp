@@ -38,17 +38,22 @@ namespace concurrency_passes {
    
    //-------------------------------------------------------------------------------------
 
-   void LightWeightPass::instrument_pthread_create_calls(llvm::Function* main)
+   void LightWeightPass::instrument_pthread_create_calls()
    {
-      auto PthreadCreateCalls = instrumentation_utils::call_instructions(main, "pthread_create");
-      for (const auto call : PthreadCreateCalls)
+      using namespace llvm;
+      Function* pthread_create = mFunctions.Function_pthread_create();
+      for (auto* user : pthread_create->users())
       {
-         instrumentation_utils::replace_call(
-            call,
-            mFunctions.Function_pthread_create(),
-            mFunctions.Wrapper_spawn_thread(),
-            {}
-         );
+         if (CallInst* call = dyn_cast<CallInst>(user))
+         {
+            instrumentation_utils::replace_call(call, mFunctions.Function_pthread_create(),
+                                                mFunctions.Wrapper_spawn_thread(), {});
+         }
+         else if (InvokeInst* invoke = dyn_cast<InvokeInst>(user))
+         {
+            instrumentation_utils::replace_invoke(invoke, mFunctions.Function_pthread_create(),
+                                                  mFunctions.Wrapper_spawn_thread(), {});
+         }
       }
    }
    
@@ -78,7 +83,7 @@ namespace concurrency_passes {
    
    void LightWeightPass::onEndOfPass(llvm::Module& module)
    {
-      instrument_pthread_create_calls(module.getFunction("main"));
+      instrument_pthread_create_calls();
    }
    
    //-------------------------------------------------------------------------------------

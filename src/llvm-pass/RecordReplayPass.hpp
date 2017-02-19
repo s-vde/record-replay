@@ -67,10 +67,10 @@ namespace concurrency_passes {
       
       //----------------------------------------------------------------------------------
 
-      /// @brief Replaces all calls to pthread_create(args) in main with calls to
+      /// @brief Replaces all calls to pthread_create(args) with calls to 
       /// Wrapper_spawn_thread(args).
 
-      void instrument_pthread_create_calls(llvm::Function* main);
+      void instrument_pthread_create_calls();
       
       //----------------------------------------------------------------------------------
       

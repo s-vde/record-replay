@@ -152,10 +152,8 @@ llvm::Value* get_or_create_global_string_ptr(llvm::Module& module, llvm::Instruc
    
    //-------------------------------------------------------------------------------------
     
-   void replace_call(llvm::CallInst* call,
-                     llvm::Function* callee,
-                     llvm::Function* newcallee,
-                     ValueVec NewArgs)           // by value
+   void replace_call(llvm::CallInst* call, llvm::Function* callee,
+                     llvm::Function* newcallee, ValueVec NewArgs)           // by value
    {
       const unsigned nr_args = call->getNumArgOperands();
       for (unsigned int i = 0; i < nr_args; ++i)
@@ -171,7 +169,28 @@ llvm::Value* get_or_create_global_string_ptr(llvm::Module& module, llvm::Instruc
       call->eraseFromParent();
    }
    
-   //-------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------
+   
+void replace_invoke(llvm::InvokeInst* invoke, llvm::Function* callee,
+                    llvm::Function* newcallee, ValueVec NewArgs)
+{
+   const unsigned nr_args = invoke->getNumArgOperands();
+   for (unsigned int i = 0; i < nr_args; ++i)
+   {
+      NewArgs.push_back(invoke->getArgOperand(i));
+   }
+   llvm::IRBuilder<> builder(invoke);
+   llvm::InvokeInst* new_invoke = builder.CreateInvoke(newcallee,
+                                                       invoke->getNormalDest(), 
+                                                       invoke->getUnwindDest(),
+                                                       llvm::ArrayRef<llvm::Value*>(NewArgs),
+                                                       invoke->getName());
+   invoke->replaceAllUsesWith(new_invoke);
+   // @todo call->dropAllReferences();?
+   invoke->eraseFromParent();
+}                      
+                       
+//--------------------------------------------------------------------------------------------------       
     
    std::string outputname()
    {
