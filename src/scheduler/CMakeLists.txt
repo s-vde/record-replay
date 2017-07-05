@@ -14,7 +14,7 @@ include_directories(${PROGRAM_MODEL_SRC})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/strategies)
 
-add_subdirectory(${CUSTOM_STRATEGIES} ${CMAKE_CURRENT_BINARY_DIR}/../selection-strategies)
+add_subdirectory(${CUSTOM_STRATEGIES} ${CMAKE_CURRENT_SOURCE_DIR}/../selection-strategies)
 include_directories(${CUSTOM_STRATEGIES})
 
 add_library(RecordReplayScheduler SHARED
