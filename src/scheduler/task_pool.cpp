@@ -9,13 +9,17 @@
 #include "utils_io.hpp"
 #include "utils_map.hpp"
 
+#include <boost/range/adaptor/filtered.hpp>
+#include <boost/range/adaptor/map.hpp>
+#include <boost/range/algorithm/copy.hpp>
+
 #include <algorithm>
 #include <assert.h>
 #include <iostream>
 
 
 namespace scheduler {
-    
+
 //--------------------------------------------------------------------------------------------------
 
 void TaskPool::register_thread(const Thread::tid_t& tid)
@@ -155,9 +159,13 @@ void TaskPool::set_status_protected(const Thread::tid_t& tid, const Thread::Stat
 
 Tids TaskPool::enabled_set() const
 {
-   /// @see utils::maps::keys
-   return utils::maps::keys(
-      mThreads, [](const auto& thread) { return thread.status() == Thread::Status::ENABLED; });
+   using namespace boost::adaptors;
+   Tids tids;
+   const auto is_enabled = [](const auto& thread) {
+      return thread.second.status() == Thread::Status::ENABLED;
+   };
+   boost::copy(mThreads | filtered(is_enabled) | map_keys, std::inserter(tids, tids.end()));
+   return tids;
 }
 
 //--------------------------------------------------------------------------------------------------

@@ -30,8 +30,7 @@ namespace scheduler {
 class TaskPool
 {
 public:
-
-    // Type definitions
+   // Type definitions
    using Tasks = std::unordered_map<Thread::tid_t, Instruction>;
    using Threads = std::unordered_map<Thread::tid_t, Thread>;
    using objects_t = std::unordered_map<program_model::Object::ptr_t, object_state>;
@@ -47,8 +46,7 @@ public:
 
    std::condition_variable mModified;
 
-   /// @brief Constructor.
-   /// @{ 
+   /// @{
    /// Lifetime
    TaskPool() = default;
    TaskPool(const TaskPool&) = delete;
@@ -70,7 +68,7 @@ public:
    /// @brief Handles a yield if tid is the currently executing Thread.
 
    void yield(const Thread::tid_t& tid);
-   
+
    /// @brief Wait until all ENABLED threads have posted a task.
 
    void wait_enabled_collected();
@@ -116,7 +114,7 @@ public:
    /// @brief mMutex-protected version of TaskPool::enabled_set.
 
    Tids enabled_set_protected();
-   
+
    /// @brief Constructs and returns the NextSet
    /// { (tid, (mTasks[tid], mThread[tid.status == ENABLED)) } from this TaskPool.
 
@@ -130,7 +128,6 @@ public:
    std::vector<data_race_t> data_races() const;
 
 private:
-
    /// @brief Datastrucure mapping Thread::tid_t's to the associated Thread's posted
    /// next task.
 
