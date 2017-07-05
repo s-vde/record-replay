@@ -1,271 +1,185 @@
 #pragma once
 
-// SCHEDULER
 #include "concurrency_error.hpp"
 #include "object_state.hpp"
 
-// PROGRAM_MODEL
 #include "state.hpp"
 
-// STL
 #include <thread>
 #include <unordered_map>
 
 using namespace program_model;
 
-//--------------------------------------------------------------------------------------90
+//--------------------------------------------------------------------------------------------------
 /// @file task_pool.hpp
 /// @author Susanne van den Elsen
 /// @date 2015-2016
-//----------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------
 
-namespace scheduler
+
+namespace scheduler {
+
+/// TaskPool encapsulates
+/// - a map mThreads mapping Thread::tid_t's to a Thread object;
+/// - a map mTasks mapping Thread::tid_t's to the next Instruction posted by the
+/// corresponding Thread.
+/// A TaskPool is equiped with a locking mechanism that allows threads to safely
+/// operate on its data concurrently.
+/// @note The TaskPool assumes that threads don't cheat and post under false id.
+
+class TaskPool
 {
-   //-------------------------------------------------------------------------------------
+public:
+
+    // Type definitions
+   using Tasks = std::unordered_map<Thread::tid_t, Instruction>;
+   using Threads = std::unordered_map<Thread::tid_t, Thread>;
+   using objects_t = std::unordered_map<program_model::Object::ptr_t, object_state>;
+
+   /// @brief Mytex protecting mTasks, mStatus, mNr_registered, and mModified.
+
+   std::mutex mMutex;
+
+   /// @brief Used to conditionally wait until for a relevant change in the TaskPool.
+   /// @details A relevant change (i.e. a Thread's became DISABLED or FINISHED, or a
+   /// new task has been posted, both affecting whether or not all enabled Threads have
+   /// posted their task).
+
+   std::condition_variable mModified;
+
+   /// @brief Constructor.
+   /// @{ 
+   /// Lifetime
+   TaskPool() = default;
+   TaskPool(const TaskPool&) = delete;
+   TaskPool(TaskPool&&) = delete;
+   ~TaskPool() = default;
+   TaskPool& operator=(const TaskPool&) = delete;
+   TaskPool& operator=(TaskPool&&) = delete;
+   /// @}
+
+   /// @brief Registers a thread with Thread::tid tid to the TaskPool by creating an
+   /// entry for it in mThreads. The Thread is registered with Thread::Status ENABLED.
+
+   void register_thread(const Thread::tid_t& tid);
+
+   /// @brief Posts the given task for Thread tid in mTasks.
+
+   void post(const Thread::tid_t& tid, const Instruction& task);
+
+   /// @brief Handles a yield if tid is the currently executing Thread.
+
+   void yield(const Thread::tid_t& tid);
    
-   /// TaskPool encapsulates
-   /// - a map mThreads mapping Thread::tid_t's to a Thread object;
-   /// - a map mTasks mapping Thread::tid_t's to the next Instruction posted by the
-   /// corresponding Thread.
-   /// A TaskPool is equiped with a locking mechanism that allows threads to safely
-   /// operate on its data concurrently.
-   /// @note The TaskPool assumes that threads don't cheat and post under false id.
+   /// @brief Wait until all ENABLED threads have posted a task.
 
-   class TaskPool
-   {
-   public:
-      
-      //----------------------------------------------------------------------------------
+   void wait_enabled_collected();
 
-      using Tasks = std::unordered_map<Thread::tid_t,Instruction>;
-      using Threads = std::unordered_map<Thread::tid_t,Thread>;
-      using objects_t = std::unordered_map<program_model::Object::ptr_t,object_state>;
-      
-      //----------------------------------------------------------------------------------
-        
-      /// @brief Mytex protecting mTasks, mStatus, mNr_registered, and mModified.
+   /// @brief Wait until all registered threads are FINISHED.
 
-      std::mutex mMutex;
-      
-      //----------------------------------------------------------------------------------
+   void wait_all_finished();
 
-      /// @brief Used to conditionally wait until for a relevant change in the TaskPool.
-      /// @details A relevant change (i.e. a Thread's became DISABLED or FINISHED, or a
-      /// new task has been posted, both affecting whether or not all enabled Threads have
-      /// posted their task).
+   /// @brief Sets mCurrentTask to the task posted by Thread tid and removes the
+   /// Instruction from mTasks. Returns a copy of the current task.
 
-      std::condition_variable mModified;
-      
-      //----------------------------------------------------------------------------------
-      
-      /// @brief Constructor.
-        
-      TaskPool() = default;
-      
-      //----------------------------------------------------------------------------------
-      
-      TaskPool(const TaskPool&) = delete;
-      TaskPool(TaskPool&&) = delete;
-      ~TaskPool() = default;
-      TaskPool& operator=(const TaskPool&) = delete;
-      TaskPool& operator=(TaskPool&&) = delete;
-        
-      //----------------------------------------------------------------------------------
+   Instruction set_current(const Thread::tid_t& tid);
 
-      /// @brief Registers a thread with Thread::tid tid to the TaskPool by creating an
-      /// entry for it in mThreads. The Thread is registered with Thread::Status ENABLED.
+   /// @brief Returns the size of mTasks.
 
-      void register_thread(const Thread::tid_t& tid);
-      
-      //----------------------------------------------------------------------------------
-        
-      /// @brief Posts the given task for Thread tid in mTasks.
+   size_t size() const;
 
-      void post(const Thread::tid_t& tid, const Instruction& task);
-      
-      //----------------------------------------------------------------------------------
-    
-      /// @brief Handles a yield if tid is the currently executing Thread.
-      
-      void yield(const Thread::tid_t& tid);
-      
-      //----------------------------------------------------------------------------------
-        
-      /// @brief Wait until all ENABLED threads have posted a task.
-  
-      void wait_enabled_collected();
-      
-      //----------------------------------------------------------------------------------
-        
-      /// @brief Wait until all registered threads are FINISHED.
+   bool has_next(const Thread::tid_t& tid) const;
 
-      void wait_all_finished();
-      
-      //----------------------------------------------------------------------------------
+   /// @brief Find function on mTasks.
 
-      /// @brief Sets mCurrentTask to the task posted by Thread tid and removes the
-      /// Instruction from mTasks. Returns a copy of the current task.
+   Tasks::const_iterator task(const Thread::tid_t& tid) const;
 
-      Instruction set_current(const Thread::tid_t& tid);
-      
-      //----------------------------------------------------------------------------------
-        
-      /// @brief Returns the size of mTasks.
+   Tasks::const_iterator tasks_cbegin() const;
+   Tasks::const_iterator tasks_cend() const;
 
-      size_t size() const;
-      
-      //----------------------------------------------------------------------------------
-        
-      bool has_next(const Thread::tid_t& tid) const;
-      
-      //----------------------------------------------------------------------------------
-        
-      /// @brief Find function on mTasks.
+   std::shared_ptr<const Instruction> current_task() const;
 
-      Tasks::const_iterator task(const Thread::tid_t& tid) const;
-      
-      //----------------------------------------------------------------------------------
-      
-      Tasks::const_iterator tasks_cbegin() const;
-      Tasks::const_iterator tasks_cend() const;
-      
-      //----------------------------------------------------------------------------------
-        
-      std::shared_ptr<const Instruction> current_task() const;
-      
-      //----------------------------------------------------------------------------------
-        
-      /// @brief mMutex-protected read-only access to the status of Thread tid.
+   /// @brief mMutex-protected read-only access to the status of Thread tid.
 
-      Thread::Status status_protected(const Thread::tid_t& tid);
-      
-      //----------------------------------------------------------------------------------
+   Thread::Status status_protected(const Thread::tid_t& tid);
 
-      /// @brief mMutex-protected write-access to the status of Thread tid.
-      /// @details Signals mModified if status is set to DISABLED or FINISHED.
+   /// @brief mMutex-protected write-access to the status of Thread tid.
+   /// @details Signals mModified if status is set to DISABLED or FINISHED.
 
-      void set_status_protected(const Thread::tid_t&, const Thread::Status&);
-      
-      //----------------------------------------------------------------------------------
-        
-      /// @brief Returns { tid | mThreads[tid].status = ENABLED }.
-      /// @note The unprotected version is needed in Scheduler::select.
-      
-      Tids enabled_set() const;
-      
-      //----------------------------------------------------------------------------------
-        
-      /// @brief mMutex-protected version of TaskPool::enabled_set.
+   void set_status_protected(const Thread::tid_t&, const Thread::Status&);
 
-      Tids enabled_set_protected();
-      
-      //----------------------------------------------------------------------------------
-        
-      /// @brief Constructs and returns the NextSet
-      /// { (tid, (mTasks[tid], mThread[tid.status == ENABLED)) } from this TaskPool.
+   /// @brief Returns { tid | mThreads[tid].status = ENABLED }.
+   /// @note The unprotected version is needed in Scheduler::select.
 
-      NextSet nextset_protected();
-      
-      //----------------------------------------------------------------------------------
+   Tids enabled_set() const;
 
-      /// @brief Creates a program_model::State object from this TaskPool and returns a
-      /// unique_ptr to it.
+   /// @brief mMutex-protected version of TaskPool::enabled_set.
 
-      std::unique_ptr<State> program_state();
-      
-      //----------------------------------------------------------------------------------
-      
-      std::vector<data_race_t> data_races() const;
+   Tids enabled_set_protected();
    
-      //----------------------------------------------------------------------------------
-      
-   private:
-        
-      //----------------------------------------------------------------------------------
+   /// @brief Constructs and returns the NextSet
+   /// { (tid, (mTasks[tid], mThread[tid.status == ENABLED)) } from this TaskPool.
 
-      /// @brief Datastrucure mapping Thread::tid_t's to the associated Thread's posted
-      /// next task.
+   NextSet nextset_protected();
 
-      Tasks mTasks;
-      
-      //----------------------------------------------------------------------------------
-        
-      /// @brief A shared pointer to the task currently being executed.
+   /// @brief Creates a program_model::State object from this TaskPool and returns a
+   /// unique_ptr to it.
 
-      std::shared_ptr<Instruction> mCurrentTask;
-      
-      //----------------------------------------------------------------------------------
-        
-      /// @brief Datastructure mapping Thread::tid_t's to the associated Thread.
-      
-      Threads mThreads;
-      
-      //----------------------------------------------------------------------------------
+   std::unique_ptr<State> program_state();
 
-      /// @brief Datastructure containing the objects operated on by the program.
+   std::vector<data_race_t> data_races() const;
 
-      objects_t m_objects;
-      
-      //----------------------------------------------------------------------------------
-      
-      std::vector<data_race_t> m_data_races;
-      
-      //----------------------------------------------------------------------------------
-        
-      /// @brief Mutex protecting m_objects and m_data_races.
+private:
 
-      mutable std::mutex m_objects_mutex;
-      
-      //----------------------------------------------------------------------------------
-        
-      // HELPER FUNCTIONS
+   /// @brief Datastrucure mapping Thread::tid_t's to the associated Thread's posted
+   /// next task.
 
-      /// @brief Unprotected read-only access to the status of Thread tid.
+   Tasks mTasks;
 
-      Thread::Status status(const Thread::tid_t& tid) const;
-      
-      //----------------------------------------------------------------------------------
-        
-      /// @brief Unprotected write access to the status of Thread tid.
+   /// @brief A shared pointer to the task currently being executed.
 
-      void set_status(const Thread::tid_t&, const Thread::Status&);
-      
-      //----------------------------------------------------------------------------------
+   std::shared_ptr<Instruction> mCurrentTask;
 
-      void update_object_post(const Thread::tid_t& tid, const Instruction& task);
-   
-      //----------------------------------------------------------------------------------
-      
-      void update_object_yield(const Instruction& task);
-      
-      //----------------------------------------------------------------------------------
+   /// @brief Datastructure mapping Thread::tid_t's to the associated Thread.
 
-      /// @brief Set the status of all Threads with lock requests on obj to the given one.
+   Threads mThreads;
 
-      void set_status_of_waiting_on(const object_state& obj, const Thread::Status&);
-      
-      //----------------------------------------------------------------------------------
-        
-      /// @brief Returns whether all ENABLED threads have posted a task.
+   /// @brief Datastructure containing the objects operated on by the program.
 
-      bool all_enabled_collected() const;
-      
-      //----------------------------------------------------------------------------------
-        
-      /// @brief Returns whether all registered threads are FINISHED.
+   objects_t m_objects;
 
-      bool all_finished() const;
-      
-      //----------------------------------------------------------------------------------
-        
-   }; // end class TaskPool
-   
-   //-------------------------------------------------------------------------------------
-    
-   // #todo Keep a container of Threads that have unknown status to make the
-   // implementation more natural.
-   // #todo mMutex and mModified should be private.
-   // #todo Use tasks datastructure compatible with State's datastructures.
-   // #todo current_task() returns a pointer to shared object.
-    
-} // end namespace scheduler
+   std::vector<data_race_t> m_data_races;
+
+   /// @brief Mutex protecting m_objects and m_data_races.
+
+   mutable std::mutex m_objects_mutex;
+
+   // HELPER FUNCTIONS
+
+   /// @brief Unprotected read-only access to the status of Thread tid.
+
+   Thread::Status status(const Thread::tid_t& tid) const;
+
+   /// @brief Unprotected write access to the status of Thread tid.
+
+   void set_status(const Thread::tid_t&, const Thread::Status&);
+
+   void update_object_post(const Thread::tid_t& tid, const Instruction& task);
+
+   void update_object_yield(const Instruction& task);
+
+   /// @brief Set the status of all Threads with lock requests on obj to the given one.
+
+   void set_status_of_waiting_on(const object_state& obj, const Thread::Status&);
+
+   /// @brief Returns whether all ENABLED threads have posted a task.
+
+   bool all_enabled_collected() const;
+
+   /// @brief Returns whether all registered threads are FINISHED.
+
+   bool all_finished() const;
+
+};   // end class TaskPool
+
+}   // end namespace scheduler
