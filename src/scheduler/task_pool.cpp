@@ -7,7 +7,7 @@
 
 #include "debug.hpp"
 #include "utils_io.hpp"
-#include "utils_map.hpp"
+#include <algorithm/zip_map_values.hpp>
 
 #include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/adaptor/map.hpp>
@@ -180,14 +180,13 @@ Tids TaskPool::enabled_set_protected()
 
 NextSet TaskPool::nextset_protected()
 {
-   using zip_function_t = std::function<next_t(Instruction, Thread)>;
-   const static zip_function_t zip_function = [](const auto& task, const auto& thread) {
+   using zip_function_t = std::function<next_t(const Instruction&, const Thread&)>;
+   const zip_function_t zip_function = [](const auto& task, const auto& thread) {
       return next_t{task, thread.status() == Thread::Status::ENABLED};
    };
    std::lock_guard<std::mutex> guard(mMutex);
-   /// @see utils::maps::zip
-   /// @throws std::out_of_range (rethrow)
-   return utils::maps::zip(mTasks, mThreads, zip_function);
+   /// @throws std::invalid_argument (rethrow)
+   return utils::algorithm::zip_map_values(mTasks, mThreads, zip_function);
 }
 
 //--------------------------------------------------------------------------------------------------
