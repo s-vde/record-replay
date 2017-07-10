@@ -1,0 +1,3 @@
+[submodule "libs/cpp-utils"]
+	path = libs/cpp-utils
+	url = https://github.com/s-vde/cpp-utils

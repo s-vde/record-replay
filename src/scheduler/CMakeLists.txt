@@ -6,33 +6,47 @@ set(CMAKE_CXX_FLAGS "-install_name @rpath/libRecordReplayScheduler.dylib")
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_MACOSX_RPATH 1)
 
-set(PROGRAM_MODEL_SRC ${CMAKE_CURRENT_SOURCE_DIR}/../program-model)
-set(PROGRAM_MODEL_SRC ${PROGRAM_MODEL_SRC} PARENT_SCOPE)
 
-include_directories(${UTILS_SRC})
-include_directories(${PROGRAM_MODEL_SRC})
+####################
+# DEPENDENCIES
+
+set(PROGRAM_MODEL   ${CMAKE_CURRENT_SOURCE_DIR}/../program-model)
+include_directories(${PROGRAM_MODEL})
+
+include_directories(${CPP_UTILS}/src)
+
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/strategies)
 
-add_subdirectory(${CUSTOM_STRATEGIES} ${CMAKE_CURRENT_SOURCE_DIR}/../selection-strategies)
+if(NOT DEFINED CUSTOM_STRATEGIES)
+	set(CUSTOM_STRATEGIES   ${CMAKE_CURRENT_SOURCE_DIR}/strategies/custom)
+endif(NOT DEFINED CUSTOM_STRATEGIES)
+message(STATUS "Using CUSTOM_STRATEGIES ${CUSTOM_STRATEGIES}")
+
+add_subdirectory(${CUSTOM_STRATEGIES} ${CMAKE_CURRENT_BINARY_DIR}/selection-strategies)
 include_directories(${CUSTOM_STRATEGIES})
 
+
+####################
+# LIBRARY
+
 add_library(RecordReplayScheduler SHARED
-  ${UTILS_SRC}/binary_sem.cpp
-  ${UTILS_SRC}/utils_io.cpp
-  ${PROGRAM_MODEL_SRC}/execution.cpp
-  ${PROGRAM_MODEL_SRC}/execution_io.cpp
-  ${PROGRAM_MODEL_SRC}/instruction.cpp
-  ${PROGRAM_MODEL_SRC}/instruction_io.cpp
-  ${PROGRAM_MODEL_SRC}/object.cpp
-  ${PROGRAM_MODEL_SRC}/object_io.cpp
-  ${PROGRAM_MODEL_SRC}/state.cpp
-  ${PROGRAM_MODEL_SRC}/state_io.cpp
-  ${PROGRAM_MODEL_SRC}/thread.cpp
-  ${PROGRAM_MODEL_SRC}/thread_io.cpp
-  ${PROGRAM_MODEL_SRC}/transition.cpp
-  ${PROGRAM_MODEL_SRC}/transition_io.cpp
-  ${PROGRAM_MODEL_SRC}/visible_instruction_io.cpp
+  ${CPP_UTILS}/src/binary_sem.cpp
+  ${CPP_UTILS}/src/utils_io.cpp
+  ${PROGRAM_MODEL}/execution.cpp
+  ${PROGRAM_MODEL}/execution_io.cpp
+  ${PROGRAM_MODEL}/instruction.cpp
+  ${PROGRAM_MODEL}/instruction_io.cpp
+  ${PROGRAM_MODEL}/object.cpp
+  ${PROGRAM_MODEL}/object_io.cpp
+  ${PROGRAM_MODEL}/state.cpp
+  ${PROGRAM_MODEL}/state_io.cpp
+  ${PROGRAM_MODEL}/thread.cpp
+  ${PROGRAM_MODEL}/thread_io.cpp
+  ${PROGRAM_MODEL}/transition.cpp
+  ${PROGRAM_MODEL}/transition_io.cpp
+  ${PROGRAM_MODEL}/visible_instruction_io.cpp
   concurrency_error.cpp
   control.cpp
   object_state.cpp
@@ -46,5 +60,9 @@ add_library(RecordReplayScheduler SHARED
   strategies/random.cpp
   strategies/selector_register.cpp
 )
+
+
+####################
+# LINKING
 
 target_link_libraries(RecordReplayScheduler CustomSelectionStrategies)

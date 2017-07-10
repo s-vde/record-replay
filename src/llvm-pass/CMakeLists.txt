@@ -14,20 +14,26 @@ include(AddLLVM)
 include_directories(${LLVM_INCLUDE_DIRS})
 add_definitions(${LLVM_DEFINITIONS})
 
-include_directories(${UTILS_SRC})
-include_directories(${PROGRAM_MODEL_SRC})
+
+####################
+# DEPENDENCIES
+
+set(PROGRAM_MODEL   ${CMAKE_CURRENT_SOURCE_DIR}/../program-model)
+include_directories(${PROGRAM_MODEL})
+
+include_directories(${CPP_UTILS}/src)
 
 
 ####################
 # LOADABLE MODULE
 
 add_llvm_loadable_module(LLVMRecordReplayPass
-  ${UTILS_SRC}/color_output.cpp
-  ${UTILS_SRC}/utils_io.cpp
-  ${PROGRAM_MODEL_SRC}/object_io.cpp
-  ${PROGRAM_MODEL_SRC}/object.cpp
-  ${PROGRAM_MODEL_SRC}/visible_instruction.hpp
-  ${PROGRAM_MODEL_SRC}/visible_instruction_io.cpp
+  ${CPP_UTILS}/src/color_output.cpp
+  ${CPP_UTILS}/src/utils_io.cpp
+  ${PROGRAM_MODEL}/object_io.cpp
+  ${PROGRAM_MODEL}/object.cpp
+  ${PROGRAM_MODEL}/visible_instruction.hpp
+  ${PROGRAM_MODEL}/visible_instruction_io.cpp
   functions.cpp
   instrumentation_utils.cpp
   llvm_visible_instruction.cpp
