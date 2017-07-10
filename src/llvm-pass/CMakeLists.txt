@@ -2,6 +2,14 @@ cmake_minimum_required(VERSION 3.5)
 
 
 ####################
+# FLAGS
+
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+	set(CMAKE_CXX_FLAGS "-undefined dynamic_lookup")
+endif()
+
+
+####################
 # LLVM ENVIRONMENT
 
 find_package(LLVM REQUIRED CONFIG)
