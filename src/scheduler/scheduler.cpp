@@ -10,6 +10,8 @@
 #include <error.hpp>
 #include <utils_io.hpp>
 
+#include <boost/range/algorithm/find_if.hpp>
+
 #include <exception>
 
 
@@ -146,13 +148,10 @@ void Scheduler::register_thread(const std::lock_guard<std::mutex>& registration_
 Thread::tid_t Scheduler::find_tid(const pthread_t& pid)
 {
    std::lock_guard<std::mutex> guard(mRegMutex);
-   for (const auto& thr : mThreads)
-   {
-      if (*thr.first == pid)
-      {
-         return thr.second;
-      }
-   }
+   const auto it =
+      boost::range::find_if(mThreads, [&pid](const auto& entry) { return *(entry.first) == pid; });
+   if (it != mThreads.end())
+      return it->second;
    throw unregistered_thread();
 }
 
