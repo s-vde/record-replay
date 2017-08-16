@@ -93,6 +93,8 @@ private:
 
    // SCHEDULER INTERNAL
 
+   void register_thread(const std::lock_guard<std::mutex>& registration_lock, pthread_t* const pid);
+
    Thread::tid_t find_tid(const pthread_t& pid);
 
    bool runs_controlled();

@@ -54,17 +54,9 @@ Scheduler::~Scheduler()
 int Scheduler::spawn_thread(pthread_t* pid, const pthread_attr_t* attr,
                             void* (*start_routine)(void*), void* args)
 {
-   std::lock_guard<std::mutex> guard(mRegMutex);
-   // Register the thread
-   const Thread::tid_t tid = mNrRegistered;
-   ++mNrRegistered;
-   mThreads.insert(TidMap::value_type(pid, tid));
-   mPool.register_thread(tid);
-   mControl.register_thread(tid);
-   // Create the thread
+   std::lock_guard<std::mutex> lock(mRegMutex);
+   register_thread(lock, pid);
    int ret = pthread_create(pid, attr, start_routine, args);
-   DEBUGF_SYNC("[parent]\t", "spawn_thread", "(tid=" << tid << ", pid=" << pid << ")", "\n");
-   // cond SIGNAL mRegCond
    mRegCond.notify_all();
    return ret;
 }
@@ -136,6 +128,19 @@ void Scheduler::join()
 
 //--------------------------------------------------------------------------------------------------
 // SCHEDULER INTERNAL
+//--------------------------------------------------------------------------------------------------
+
+void Scheduler::register_thread(const std::lock_guard<std::mutex>& registration_lock,
+                                pthread_t* const pid)
+{
+   const Thread::tid_t tid = mNrRegistered;
+   ++mNrRegistered;
+   mThreads.insert(TidMap::value_type(pid, tid));
+   mPool.register_thread(tid);
+   mControl.register_thread(tid);
+   DEBUGF_SYNC(thread_str(tid), "register_thread", "pid =" << pid, "\n");
+}
+
 //--------------------------------------------------------------------------------------------------
 
 Thread::tid_t Scheduler::find_tid(const pthread_t& pid)
