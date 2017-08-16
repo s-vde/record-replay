@@ -38,7 +38,8 @@ In order to instrument an input program, run
 ./instrument.sh
      <record_replay_build_dir>
      <path_to_llvm> 
-     <path_to_input_program> 
+     <path_to_input_program>
+     <nr_of_threads>
      <path_to_output_dir>
      (compiler_options)
 ```
