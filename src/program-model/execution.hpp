@@ -1,175 +1,129 @@
 #pragma once
 
-// PROGRAM_MODEL
 #include "transition.hpp"
 
-// STL
 #include <assert.h>
 #include <vector>
 
-//--------------------------------------------------------------------------------------90
+//--------------------------------------------------------------------------------------------------
 /// @file execution.hpp
 /// @author Susanne van den Elsen
 /// @date 2015-2017
-//----------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------
 
-namespace program_model
+
+namespace program_model {
+
+using thread_execution_t = std::vector<Instruction>;
+
+class Execution
 {
-   //-------------------------------------------------------------------------------------
-   
-   using thread_execution_t = std::vector<Instruction>;
-   
-   //-------------------------------------------------------------------------------------
-   
-   class Execution
+public:
+   using index_t = unsigned int;
+   using transition_t = Transition;
+   using execution_t = std::vector<transition_t>;
+   using StatePtr = typename transition_t::StatePtr;
+
+   enum class Status
    {
-   public:
-      
-      //----------------------------------------------------------------------------------
-		
-      using index_t = unsigned int;
-      using transition_t = Transition;
-      using execution_t = std::vector<transition_t>;
-      using StatePtr = typename transition_t::StatePtr;
+      RUNNING = 0,
+      DONE = 1,
+      DEADLOCK = 2,
+      BLOCKED = 3,
+      ERROR = 4
+   };
 
-      enum class Status { RUNNING = 0, DONE = 1, DEADLOCK = 2, BLOCKED = 3, ERROR = 4 };
-      
-      //----------------------------------------------------------------------------------
-        
-      /// @brief Constructs an empty Execution object with given number of threads.
-      
-      explicit Execution(const unsigned int nr_threads, const StatePtr& s0=nullptr);
-      
-      //----------------------------------------------------------------------------------
+   /// @brief Constructs an empty Execution object with given number of threads.
 
-      /// @brief Subscript operator.
-      /// @note Indexing starts at 1.
+   explicit Execution(const unsigned int nr_threads, const StatePtr& s0 = nullptr);
 
-      transition_t& operator[](const index_t index);
-      
-      //----------------------------------------------------------------------------------
-      
-      /// @brief Subscript operator.
-      /// @note Indexing starts at 1.
-      
-      const transition_t& operator[](const index_t index) const;
-      
-      //----------------------------------------------------------------------------------
-        
-      execution_t::iterator begin();
-      execution_t::const_iterator begin() const;
-      execution_t::iterator end();
-      execution_t::const_iterator end() const;
-      
-      //----------------------------------------------------------------------------------
-        
-      /// @brief Getter.
-        
-      const State& s0() const;
-      void set_s0(const StatePtr& s0);
-      
-      //----------------------------------------------------------------------------------
-      
-      size_t size() const;
-      bool empty() const;
-      
-      //----------------------------------------------------------------------------------
+   /// @brief Subscript operator.
+   /// @note Indexing starts at 1.
 
-      bool initialized() const;
-      
-      //----------------------------------------------------------------------------------
-        
-      /// @note Like std::vector::back calling last() on an empty Execution is undefined
-      /// and does not throw an exception. In the current implementation there is an
-      /// assertion in place.
+   transition_t& operator[](const index_t index);
 
-      transition_t& last();
-      const transition_t& last() const;
-      
-      //----------------------------------------------------------------------------------
-        
-      // #todo Assertion should be trivial when s0 is a required argument to
-      // Execution's constructor.
-      State& final();
-      const State& final() const;
-      
-      //----------------------------------------------------------------------------------
-        
-      // #todo Assertion should be trivial when s0 is a required argument to
-      // Execution's constructor.
-      void push_back(const Instruction& instr, const StatePtr& post);
-      
-      //----------------------------------------------------------------------------------
+   /// @brief Subscript operator.
+   /// @note Indexing starts at 1.
 
-      /// @note The popped Transition t still has (valid) pointers to t.pre and t.post.
+   const transition_t& operator[](const index_t index) const;
 
-      transition_t pop_last();
-      
-      //----------------------------------------------------------------------------------
-      
-      /// @brief Getter.
-      
-      unsigned nr_threads() const;
-      
-      //----------------------------------------------------------------------------------
-      
-      /// @brief Getter.
-      
-      const Status& status() const;
-      
-      //----------------------------------------------------------------------------------
-      
-      /// @brief Setter.
-      
-      void set_status(const Status& status);
-      
-      //----------------------------------------------------------------------------------
-      
-      /// @brief Getter.
-      
-      bool contains_locks() const;
-      
-      //----------------------------------------------------------------------------------
-      
-      /// @brief Setter.
-      
-      void set_contains_locks();
-      
-      //----------------------------------------------------------------------------------
-        
-   private:
+   execution_t::iterator begin();
+   execution_t::const_iterator begin() const;
+   execution_t::iterator end();
+   execution_t::const_iterator end() const;
 
-      //----------------------------------------------------------------------------------
-      
-      /// @brief Modeling a sequence of Transition objects.
-      execution_t mExecution;
-      
-      /// @brief Pointer to the initial State of the Execution.
-      StatePtr mS0;
-      
-      /// @brief The number of threads in the program to which this Execution belongs.
-      unsigned int mNrThreads;
-      
-      /// @brief The (current/termination) status of the Execution object.
-      Status mStatus;
-      
-      bool mContainsLocks;
-        
-      //----------------------------------------------------------------------------------
-        
-      StatePtr final_ptr();
-      
-      //----------------------------------------------------------------------------------
-        
-      /// @brief Template specialization for State of
-      /// operator>>(istream, Execution<State>) is friend.
-      
-      friend std::istream& operator>>(std::istream&, Execution&);
-      
-      //----------------------------------------------------------------------------------
-        
-   }; // end class template Execution<State>
-   
-   //-------------------------------------------------------------------------------------
-   
+   /// @brief Getter.
+
+   const State& s0() const;
+   void set_s0(const StatePtr& s0);
+
+   size_t size() const;
+   bool empty() const;
+
+   bool initialized() const;
+
+   /// @note Like std::vector::back calling last() on an empty Execution is undefined
+   /// and does not throw an exception. In the current implementation there is an
+   /// assertion in place.
+
+   transition_t& last();
+   const transition_t& last() const;
+
+   // #todo Assertion should be trivial when s0 is a required argument to
+   // Execution's constructor.
+   State& final();
+   const State& final() const;
+
+   // #todo Assertion should be trivial when s0 is a required argument to
+   // Execution's constructor.
+   void push_back(const Instruction& instr, const StatePtr& post);
+
+   /// @note The popped Transition t still has (valid) pointers to t.pre and t.post.
+
+   transition_t pop_last();
+
+   /// @brief Getter.
+
+   unsigned nr_threads() const;
+
+   /// @brief Getter.
+
+   const Status& status() const;
+
+   /// @brief Setter.
+
+   void set_status(const Status& status);
+
+   /// @brief Getter.
+
+   bool contains_locks() const;
+
+   /// @brief Setter.
+
+   void set_contains_locks();
+
+private:
+   /// @brief Modeling a sequence of Transition objects.
+   execution_t mExecution;
+
+   /// @brief Pointer to the initial State of the Execution.
+   StatePtr mS0;
+
+   /// @brief The number of threads in the program to which this Execution belongs.
+   unsigned int mNrThreads;
+
+   /// @brief The (current/termination) status of the Execution object.
+   Status mStatus;
+
+   bool mContainsLocks;
+
+   StatePtr final_ptr();
+
+   /// @brief Template specialization for State of
+   /// operator>>(istream, Execution<State>) is friend.
+
+   friend std::istream& operator>>(std::istream&, Execution&);
+
+}; // end class template Execution<State>
+
 } // end namespace program_model

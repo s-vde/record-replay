@@ -1,56 +1,76 @@
 
 #include "thread_io.hpp"
 
-// STL
 #include <iostream>
 
-namespace program_model
+namespace program_model {
+
+//--------------------------------------------------------------------------------------------------
+
+std::string to_string(const Thread::Status& status)
 {
-   //-------------------------------------------------------------------------------------
-   
-   std::string to_string(const Thread::Status& status)
+   switch (status)
    {
-      switch(status)
-      {
-         case Thread::Status::START      : return "START";
-         case Thread::Status::CONTROL    : return "CONTROL";
-         case Thread::Status::ENABLED    : return "ENABLED";
-         case Thread::Status::DISABLED   : return "DISABLED";
-         case Thread::Status::FINISHED   : return "FINISHED";
-      }
+      case Thread::Status::START:
+         return "START";
+      case Thread::Status::CONTROL:
+         return "CONTROL";
+      case Thread::Status::ENABLED:
+         return "ENABLED";
+      case Thread::Status::DISABLED:
+         return "DISABLED";
+      case Thread::Status::FINISHED:
+         return "FINISHED";
    }
-   
-   //-------------------------------------------------------------------------------------
-    
-   std::ostream& operator<<(std::ostream& os, const Thread::Status& status)
+}
+
+//--------------------------------------------------------------------------------------------------
+
+std::ostream& operator<<(std::ostream& os, const Thread::Status& status)
+{
+   os << to_string(status);
+   return os;
+}
+
+//--------------------------------------------------------------------------------------------------
+
+std::istream& operator>>(std::istream& is, Thread::Status& status)
+{
+   std::string str;
+   is >> str;
+   if (str == "START")
    {
-      os << to_string(status);
-      return os;
+      status = Thread::Status::START;
    }
-   
-   //-------------------------------------------------------------------------------------
-    
-   std::istream& operator>>(std::istream& is, Thread::Status& status)
+   else if (str == "CONTROL")
    {
-      std::string str;
-      is >> str;
-      if (str == "START")         { status = Thread::Status::START;       }
-      else if (str == "CONTROL")  { status = Thread::Status::CONTROL;     }
-      else if (str == "ENABLED")  { status = Thread::Status::ENABLED;     }
-      else if (str == "DISABLED") { status = Thread::Status::DISABLED;    }
-      else if (str == "FINISHED") { status = Thread::Status::FINISHED;    }
-      else is.setstate(std::ios::failbit);
-      return is;
+      status = Thread::Status::CONTROL;
    }
-   
-   //-------------------------------------------------------------------------------------
-    
-   std::ostream& operator<<(std::ostream& os, const Thread& thread)
+   else if (str == "ENABLED")
    {
-      os << thread.tid() << " " << thread.status();
-      return os;
+      status = Thread::Status::ENABLED;
    }
-   
-   //-------------------------------------------------------------------------------------
-   
+   else if (str == "DISABLED")
+   {
+      status = Thread::Status::DISABLED;
+   }
+   else if (str == "FINISHED")
+   {
+      status = Thread::Status::FINISHED;
+   }
+   else
+      is.setstate(std::ios::failbit);
+   return is;
+}
+
+//--------------------------------------------------------------------------------------------------
+
+std::ostream& operator<<(std::ostream& os, const Thread& thread)
+{
+   os << thread.tid() << " " << thread.status();
+   return os;
+}
+
+//--------------------------------------------------------------------------------------------------
+
 } // end namespace program_model

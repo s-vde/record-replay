@@ -1,86 +1,93 @@
 
 #include "state_io.hpp"
 
-// PROGRAM_MODEL
 #include "instruction_io.hpp"
 #include "state.hpp"
 
-// UTILS
-#include "container_io.hpp"
+#include <container_io.hpp>
 
-namespace program_model
+namespace program_model {
+
+//--------------------------------------------------------------------------------------------------
+
+std::istream& operator>>(std::istream& is, next_t& next)
 {
-   //-------------------------------------------------------------------------------------
-   
-   std::istream& operator>>(std::istream& is, next_t& next)
+   std::string str_enabled{};
+   if (is >> next.instr >> str_enabled)
    {
-      std::string str_enabled{};
-      if (is >> next.instr >> str_enabled)
+      if (str_enabled == "enabled")
       {
-         if (str_enabled == "enabled")       { next.enabled = true;  }
-         else if (str_enabled == "disabled") { next.enabled = false; }
-         else { is.setstate(std::ios::failbit); }
+         next.enabled = true;
       }
-      return is;
-   }
-   
-   //-------------------------------------------------------------------------------------
-    
-   std::ostream& operator<<(std::ostream& os, const next_t& next)
-   {
-      os << next.instr << " " << (next.enabled ? "enabled" : "disabled");
-      return os;
-   }
-   
-   //-------------------------------------------------------------------------------------
-    
-   std::istream& operator>>(std::istream& is, State& state)
-   {
-      std::string tag{};
-      if (is >> tag)
+      else if (str_enabled == "disabled")
       {
-         if (tag == "State")
-         {
-            is >> state.mEnabled >> state.mNext;
-         }
-         else
-         {
-            is.setstate(std::ios::failbit);
-         }
+         next.enabled = false;
       }
-      return is;
-   }
-   
-   //-------------------------------------------------------------------------------------
-    
-   std::istream& operator>>(std::istream& is, std::shared_ptr<State>& state)
-   {
-      std::string tag{};
-      if (is >> tag)
+      else
       {
-         if (tag == "State")
-         {
-            Tids enabled{};
-            NextSet next{};
-            is >> enabled >> next;
-            state = std::make_shared<State>(enabled, next);
-         }
-         else
-         {
-            is.setstate(std::ios::failbit);
-         }
+         is.setstate(std::ios::failbit);
       }
-      return is;
    }
-   
-   //-------------------------------------------------------------------------------------
-    
-   std::ostream& operator<<(std::ostream& os, const State& state)
+   return is;
+}
+
+//--------------------------------------------------------------------------------------------------
+
+std::ostream& operator<<(std::ostream& os, const next_t& next)
+{
+   os << next.instr << " " << (next.enabled ? "enabled" : "disabled");
+   return os;
+}
+
+//--------------------------------------------------------------------------------------------------
+
+std::istream& operator>>(std::istream& is, State& state)
+{
+   std::string tag{};
+   if (is >> tag)
    {
-      os << state.tag() << " " << state.enabled() << " " << state.mNext;
-      return os;
+      if (tag == "State")
+      {
+         is >> state.mEnabled >> state.mNext;
+      }
+      else
+      {
+         is.setstate(std::ios::failbit);
+      }
    }
-   
-   //-------------------------------------------------------------------------------------
+   return is;
+}
+
+//--------------------------------------------------------------------------------------------------
+
+std::istream& operator>>(std::istream& is, std::shared_ptr<State>& state)
+{
+   std::string tag{};
+   if (is >> tag)
+   {
+      if (tag == "State")
+      {
+         Tids enabled{};
+         NextSet next{};
+         is >> enabled >> next;
+         state = std::make_shared<State>(enabled, next);
+      }
+      else
+      {
+         is.setstate(std::ios::failbit);
+      }
+   }
+   return is;
+}
+
+//--------------------------------------------------------------------------------------------------
+
+std::ostream& operator<<(std::ostream& os, const State& state)
+{
+   os << state.tag() << " " << state.enabled() << " " << state.mNext;
+   return os;
+}
+
+//--------------------------------------------------------------------------------------------------
 
 } // end namespace program_model
