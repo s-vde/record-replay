@@ -36,13 +36,15 @@ public:
 
    // WRAPPERS
 
-   /// @brief Calls pthread_create(pid, attr, start_routine, args) and registers the
-   /// created thread with the Scheduler.
-   /// @details Associates pid with a unique Scheduler-internal id in mThreads and
-   /// registers the created thread with mPool and mControl. Signals mRegCond when the
-   /// registration is finished. Only a single thread at a time can use this functionality.
-   /// This is important when threads can spawn other threads and hence multiple threads
-   /// can be in spawn_thread at the same time.
+   /// @brief Wrapper around pthread_create(pid, attr, start_routine, args). Registers the newly
+   /// created thread with the Scheduler. Called by the spawning thread.
+   ///
+   /// @details Associates pid with a unique Scheduler-internal thread id (tid) in mThreads and
+   /// registers the created thread with mPool and mControl. Signals mRegCond when the registration
+   /// is finished. Only a single thread at a time can use this functionality, which is important
+   /// when threads can spawn other threads and hence multiple threads can be in spawn_thread
+   /// concurrently.
+   ///
    /// @returns The return value of the pthread_create call.
 
    int spawn_thread(pthread_t* pid, const pthread_attr_t* attr, void* (*start_routine)(void*),
@@ -68,7 +70,7 @@ private:
    class LocalVars;
 
    // Type definitions
-   using TidMap = std::unordered_map<pthread_t*, const Thread::tid_t>;
+   using TidMap = std::unordered_map<pthread_t, const Thread::tid_t>;
 
    std::unique_ptr<LocalVars> mLocVars;
    TaskPool mPool;
@@ -92,7 +94,7 @@ private:
 
    // SCHEDULER INTERNAL
 
-   void register_thread(const std::lock_guard<std::mutex>& registration_lock, pthread_t* const pid);
+   void register_thread(const std::lock_guard<std::mutex>& registration_lock, const pthread_t& pid);
 
    /// @brief If the program runs Scheduler-controlled, this function creates an instruction and
    /// posts it mPool. Then it calls Scheduler::wait_for_turn.

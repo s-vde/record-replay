@@ -74,8 +74,9 @@ int Scheduler::spawn_thread(pthread_t* pid, const pthread_attr_t* attr,
                             void* (*start_routine)(void*), void* args)
 {
    std::lock_guard<std::mutex> lock(mRegMutex);
-   register_thread(lock, pid);
    int ret = pthread_create(pid, attr, start_routine, args);
+   // pid only holds useful data once pthread_create returns
+   register_thread(lock, *pid);
    mRegCond.notify_all();
    return ret;
 }
@@ -145,14 +146,14 @@ void Scheduler::join()
 //--------------------------------------------------------------------------------------------------
 
 void Scheduler::register_thread(const std::lock_guard<std::mutex>& registration_lock,
-                                pthread_t* const pid)
+                                const pthread_t& pid)
 {
    const Thread::tid_t tid = mNrRegistered;
    ++mNrRegistered;
    mThreads.insert(TidMap::value_type(pid, tid));
    mPool.register_thread(tid);
    mControl.register_thread(tid);
-   DEBUGF_SYNC(thread_str(tid), "register_thread", "pid =" << pid, "\n");
+   DEBUGF_SYNC(thread_str(tid), "register_thread", "", "\n");
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -184,8 +185,8 @@ void Scheduler::post_task(const create_instruction_t& create_instruction)
 Thread::tid_t Scheduler::find_tid(const pthread_t& pid)
 {
    std::lock_guard<std::mutex> guard(mRegMutex);
-   const auto it =
-      boost::range::find_if(mThreads, [&pid](const auto& entry) { return *(entry.first) == pid; });
+   const auto it = boost::range::find_if(
+      mThreads, [&pid](const auto& entry) { return pthread_equal(entry.first, pid); });
    if (it != mThreads.end())
       return it->second;
    throw unregistered_thread();
