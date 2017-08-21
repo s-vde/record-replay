@@ -48,12 +48,11 @@ public:
    int spawn_thread(pthread_t* pid, const pthread_attr_t* attr, void* (*start_routine)(void*),
                     void* args);
 
-   /// @brief If the program runs Scheduler-controlled, this function constructs an
-   /// Instruction object from the the input, posts this Instruction in mPool and calls
-   /// Scheduler::wait_for_turn.
+   void post_memory_instruction(const int op, const Object& obj, bool is_atomic,
+                                const std::string& file_name, unsigned int line_number);
 
-   void post_task(const int op, const Object& obj, bool is_atomic, const std::string& file_name,
-                  unsigned int line_number);
+   void post_lock_instruction(const int op, const Object& obj, const std::string& file_name,
+                              unsigned int line_number);
 
    /// @brief If the program runs Scheduler-controlled, this function updates the
    /// status of the calling thread in mPool.
@@ -94,6 +93,11 @@ private:
    // SCHEDULER INTERNAL
 
    void register_thread(const std::lock_guard<std::mutex>& registration_lock, pthread_t* const pid);
+
+   /// @brief If the program runs Scheduler-controlled, this function posts the given instruction in
+   /// mPool and calls Scheduler::wait_for_turn.
+
+   void post_task(const Instruction& instruction);
 
    Thread::tid_t find_tid(const pthread_t& pid);
 
@@ -181,11 +185,11 @@ extern "C" {
 int wrapper_spawn_thread(pthread_t* pid, const pthread_attr_t* attr, void* (*start_routine)(void*),
                          void* args);
 
-void wrapper_post_instruction(int operation, void* operand, const char* file_name,
-                              unsigned int line_number);
-
 void wrapper_post_memory_instruction(int operation, void* operand, bool is_atomic,
                                      const char* file_name, unsigned int line_number);
+
+void wrapper_post_lock_instruction(int operation, void* operand, const char* file_name,
+                                   unsigned int line_number);
 
 void wrapper_finish();
 

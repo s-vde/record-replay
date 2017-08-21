@@ -32,7 +32,7 @@ public:
    void initialize(llvm::Module& module);
 
    llvm::Function* Wrapper_finish() const;
-   llvm::Function* Wrapper_post_instruction() const;
+   llvm::Function* Wrapper_post_lock_instruction() const;
    llvm::Function* Wrapper_post_memory_instruction() const;
    llvm::Function* Wrapper_spawn_thread() const;
 

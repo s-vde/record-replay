@@ -65,29 +65,39 @@ int Scheduler::spawn_thread(pthread_t* pid, const pthread_attr_t* attr,
 
 //--------------------------------------------------------------------------------------------------
 
-void Scheduler::post_task(const int op, const Object& obj, bool is_atomic,
-                          const std::string& file_name, unsigned int line_number)
+void Scheduler::post_memory_instruction(const int op, const Object& obj, bool is_atomic,
+                                        const std::string& file_name, unsigned int line_number)
 {
-   if (runs_controlled())
+   try
    {
-      try
-      {
-         const Thread::tid_t tid = find_tid(pthread_self());
+      const Thread::tid_t tid = find_tid(pthread_self());
+      Instruction instruction(tid, static_cast<Object::Op>(op), obj, is_atomic);
+      instruction.add_meta_data({file_name, line_number});
+      DEBUGF_SYNC(thread_str(tid), "post_memory_instruction", instruction, "\n");
+      post_task(instruction);
+   }
+   catch (const unregistered_thread&)
+   {
+      DEBUGF_SYNC("[unregistered_thread]", "post_memory_instruction", "", "\n");
+   }
+}
 
-         mPool.yield(tid);
+//--------------------------------------------------------------------------------------------------
 
-         Instruction instr(tid, static_cast<Object::Op>(op), obj, is_atomic);
-         instr.add_meta_data({file_name, line_number});
-         DEBUGF(thread_str(tid), "post_task", instr, "\n");
-         mPool.post(tid, instr);
-
-         DEBUGFNL(thread_str(tid), "wait_for_turn", "", "");
-         mControl.wait_for_turn(tid);
-      }
-      catch (const unregistered_thread&)
-      {
-         DEBUGFNL("[unregistered_thread]", "post_task", "", "");
-      }
+void Scheduler::post_lock_instruction(const int op, const Object& obj, const std::string& file_name,
+                                      unsigned int line_number)
+{
+   try
+   {
+      const Thread::tid_t tid = find_tid(pthread_self());
+      Instruction instruction(tid, static_cast<Object::Op>(op), obj, false);
+      instruction.add_meta_data({file_name, line_number});
+      DEBUGF_SYNC(thread_str(tid), "post_lock_instruction", instruction, "\n");
+      post_task(instruction);
+   }
+   catch (const unregistered_thread&)
+   {
+      DEBUGF_SYNC("[unregistered_thread]", "post_lock_instruction", "", "\n");
    }
 }
 
@@ -141,6 +151,21 @@ void Scheduler::register_thread(const std::lock_guard<std::mutex>& registration_
    mPool.register_thread(tid);
    mControl.register_thread(tid);
    DEBUGF_SYNC(thread_str(tid), "register_thread", "pid =" << pid, "\n");
+}
+
+//--------------------------------------------------------------------------------------------------
+
+void Scheduler::post_task(const Instruction& instruction)
+{
+   if (runs_controlled())
+   {
+      const auto tid = instruction.tid();
+      mPool.yield(tid);
+      mPool.post(tid, instruction);
+
+      DEBUGF_SYNC(thread_str(tid), "wait_for_turn", "", "\n");
+      mControl.wait_for_turn(tid);
+   }
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -417,20 +442,20 @@ int wrapper_spawn_thread(pthread_t* pid, const pthread_attr_t* attr, void* (*sta
 
 //--------------------------------------------------------------------------------------------------
 
-void wrapper_post_instruction(int operation, void* operand, const char* file_name,
-                              unsigned int line_number)
+void wrapper_post_memory_instruction(int operation, void* operand, bool is_atomic,
+                                     const char* file_name, unsigned int line_number)
 {
-   the_scheduler.post_task(operation, program_model::Object(operand), false, file_name,
-                           line_number);
+   the_scheduler.post_memory_instruction(operation, program_model::Object(operand), is_atomic,
+                                         file_name, line_number);
 }
 
 //--------------------------------------------------------------------------------------------------
 
-void wrapper_post_memory_instruction(int operation, void* operand, bool is_atomic,
-                                     const char* file_name, unsigned int line_number)
+void wrapper_post_lock_instruction(int operation, void* operand, const char* file_name,
+                                   unsigned int line_number)
 {
-   the_scheduler.post_task(operation, program_model::Object(operand), is_atomic, file_name,
-                           line_number);
+   the_scheduler.post_lock_instruction(operation, program_model::Object(operand), file_name,
+                                       line_number);
 }
 
 //--------------------------------------------------------------------------------------------------

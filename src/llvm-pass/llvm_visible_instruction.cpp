@@ -40,7 +40,7 @@ void wrap::operator()(const memory_instruction& instruction)
 void wrap::operator()(const lock_instruction& instruction)
 {
    auto arguments = construct_arguments(instruction);
-   llvm::CallInst::Create(m_functions.Wrapper_post_instruction(), arguments, "",
+   llvm::CallInst::Create(m_functions.Wrapper_post_lock_instruction(), arguments, "",
                           &*m_instruction_it);
 }
 
@@ -100,7 +100,7 @@ llvm::Value* wrap::construct_line_number(unsigned int line_number)
 
 
 namespace {
-    
+
 template <typename operation_t>
 void dump_base(const visible_instruction<operation_t>& instruction)
 {
@@ -135,7 +135,7 @@ void dump::operator()(const lock_instruction& instruction) const
 
 
 namespace llvm_visible_instruction {
-    
+
 //--------------------------------------------------------------------------------------------------
 
 bool is_thread_local(const llvm::Value& operand)

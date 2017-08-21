@@ -62,12 +62,12 @@ void Functions::initialize(llvm::Module& module)
       add_wrapper_prototype(module, "wrapper_spawn_thread", type, attributes);
    }
 
-   // wrapper_post_instruction
+   // wrapper_post_lock_instruction
    {
       auto* type = FunctionType::get(
          void_type, {builder.getInt32Ty(), void_ptr_type, type_char_ptr, builder.getInt32Ty()},
          false);
-      add_wrapper_prototype(module, "wrapper_post_instruction", type, attributes);
+      add_wrapper_prototype(module, "wrapper_post_lock_instruction", type, attributes);
    }
 
    // wrapper_post_memory_instruction
@@ -108,9 +108,9 @@ llvm::Function* Functions::Wrapper_finish() const
 
 //-----------------------------------------------------------------------------------------------
 
-llvm::Function* Functions::Wrapper_post_instruction() const
+llvm::Function* Functions::Wrapper_post_lock_instruction() const
 {
-   return m_wrappers.find("wrapper_post_instruction")->second;
+   return m_wrappers.find("wrapper_post_lock_instruction")->second;
 }
 
 //-----------------------------------------------------------------------------------------------

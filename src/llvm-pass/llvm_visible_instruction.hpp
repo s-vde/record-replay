@@ -24,7 +24,7 @@ class Value;
 
 
 namespace concurrency_passes {
-    
+
 //--------------------------------------------------------------------------------------------------
 
 // Forward declarations
