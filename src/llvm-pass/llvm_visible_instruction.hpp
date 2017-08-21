@@ -32,16 +32,19 @@ class Functions;
 
 //--------------------------------------------------------------------------------------------------
 
+// Type definitions
+using thread_id_t = llvm::Value*;
 using operand_t = llvm::Value*;
 
 template <typename operation_t>
-using visible_instruction = program_model::visible_instruction<operation_t, operand_t>;
+using visible_instruction =
+   program_model::detail::visible_instruction<thread_id_t, operation_t, operand_t>;
 
-using memory_instruction = program_model::memory_instruction<operand_t>;
+using memory_instruction = program_model::detail::memory_instruction<thread_id_t, operand_t>;
 
-using lock_instruction = program_model::lock_instruction<operand_t>;
+using lock_instruction = program_model::detail::lock_instruction<thread_id_t, operand_t>;
 
-using visible_instruction_t = program_model::visible_instruction_t<operand_t>;
+using visible_instruction_t = program_model::detail::visible_instruction_t<thread_id_t, operand_t>;
 
 //--------------------------------------------------------------------------------------------------
 

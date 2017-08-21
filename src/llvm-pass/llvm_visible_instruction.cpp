@@ -169,7 +169,7 @@ creator::return_type create(llvm::Instruction& instruction,
 {
    if (!is_thread_local(*operand))
    {
-      instruction_t visible_instruction(operation, operand, std::forward<args_t>(args)...);
+      instruction_t visible_instruction(nullptr, operation, operand, std::forward<args_t>(args)...);
       auto meta_data = get_meta_data(instruction);
       if (meta_data)
       {
