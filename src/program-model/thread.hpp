@@ -27,7 +27,7 @@ public:
 
    /// @brief Constructor.
 
-   explicit Thread(const tid_t&);
+   explicit Thread(const tid_t&, Status status = Status::START);
 
    /// @brief Getter.
 

@@ -233,7 +233,7 @@ void Scheduler::run()
 {
    mControl.set_owner(std::this_thread::get_id());
    wait_all_registered();
-   mPool.wait_enabled_collected();
+   mPool.wait_until_unfinished_threads_have_posted();
 
    Execution E(mLocVars->nr_threads(), mPool.program_state());
 
@@ -261,7 +261,7 @@ void Scheduler::run()
             set_status(selection.first);
             break;
          }
-         mPool.wait_enabled_collected();
+         mPool.wait_until_unfinished_threads_have_posted();
       }
       catch (const deadlock_exception& deadlock)
       {

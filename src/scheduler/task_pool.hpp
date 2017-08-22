@@ -69,9 +69,9 @@ public:
 
    void yield(const Thread::tid_t& tid);
 
-   /// @brief Wait until all ENABLED threads have posted a task.
+   /// @brief Wait until all unfinished threads have posted a task.
 
-   void wait_enabled_collected();
+   void wait_until_unfinished_threads_have_posted();
 
    /// @brief Wait until all registered threads are FINISHED.
 
@@ -169,14 +169,10 @@ private:
 
    void set_status_of_waiting_on(const object_state& obj, const Thread::Status&);
 
-   /// @brief Returns whether all ENABLED threads have posted a task.
-
-   bool all_enabled_collected() const;
-
    /// @brief Returns whether all registered threads are FINISHED.
 
    bool all_finished() const;
 
-};   // end class TaskPool
+}; // end class TaskPool
 
-}   // end namespace scheduler
+} // end namespace scheduler

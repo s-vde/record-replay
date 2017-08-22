@@ -17,7 +17,6 @@
 #include <assert.h>
 #include <iostream>
 
-
 namespace scheduler {
 
 //--------------------------------------------------------------------------------------------------
@@ -26,8 +25,7 @@ void TaskPool::register_thread(const Thread::tid_t& tid)
 {
    std::lock_guard<std::mutex> guard(mMutex);
    mThreads.insert(Threads::value_type(tid, Thread(tid)));
-   mThreads.find(tid)->second.set_status(Thread::Status::ENABLED);
-   DEBUG(mThreads.find(tid)->second);
+   DEBUGF_SYNC("TaskPool", "register_thread", mThreads.find(tid)->second, "\n");
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -58,13 +56,15 @@ void TaskPool::yield(const Thread::tid_t& tid)
 
 //--------------------------------------------------------------------------------------------------
 
-void TaskPool::wait_enabled_collected()
+void TaskPool::wait_until_unfinished_threads_have_posted()
 {
-   std::unique_lock<std::mutex> ul(mMutex);
-   // cond WAIT mModified
-   mModified.wait(ul, [this] {
-      DEBUGFNL("TaskPool", "wait_enabled_collected", "", "");
-      return all_enabled_collected();
+   std::unique_lock<std::mutex> lock(mMutex);
+   mModified.wait(lock, [this] {
+      DEBUGF_SYNC("TaskPool", "wait_until_unfinished_threads_have_posted", "", "\n");
+      return std::all_of(mThreads.begin(), mThreads.end(), [this](const auto& thread) {
+         return thread.second.status() == Thread::Status::FINISHED ||
+                mTasks.find(thread.first) != mTasks.end();
+      });
    });
 }
 
@@ -89,7 +89,7 @@ Instruction TaskPool::set_current(const Thread::tid_t& tid)
    /// @pre mTasks.find(tid) != mTasks.end()
    assert(it != mTasks.end());
    mCurrentTask = std::shared_ptr<Instruction>(new Instruction(it->second));
-   mTasks.erase(it);   // noexcept
+   mTasks.erase(it); // noexcept
    return *mCurrentTask;
 }
 
@@ -282,16 +282,6 @@ void TaskPool::set_status_of_waiting_on(const object_state& object, const Thread
 
 //--------------------------------------------------------------------------------------------------
 
-bool TaskPool::all_enabled_collected() const
-{
-   return std::all_of(mThreads.begin(), mThreads.end(), [this](const auto& thread) {
-      return thread.second.status() != Thread::Status::ENABLED ||
-             mTasks.find(thread.first) != mTasks.end();
-   });
-}
-
-//--------------------------------------------------------------------------------------------------
-
 bool TaskPool::all_finished() const
 {
    return std::all_of(mThreads.begin(), mThreads.end(), [](const auto& thread) {
@@ -301,4 +291,4 @@ bool TaskPool::all_finished() const
 
 //--------------------------------------------------------------------------------------------------
 
-}   // end namespace scheduler
+} // end namespace scheduler

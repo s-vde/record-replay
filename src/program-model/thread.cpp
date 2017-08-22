@@ -5,9 +5,9 @@ namespace program_model {
 
 //--------------------------------------------------------------------------------------------------
 
-Thread::Thread(const tid_t& tid)
+Thread::Thread(const tid_t& tid, const Status status)
 : mTid(tid)
-, mStatus(Status::START)
+, mStatus(status)
 {
 }
 
