@@ -20,7 +20,6 @@ public:
    enum class Status
    {
       START,
-      CONTROL,
       ENABLED,
       DISABLED,
       FINISHED

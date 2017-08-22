@@ -13,8 +13,6 @@ std::string to_string(const Thread::Status& status)
    {
       case Thread::Status::START:
          return "START";
-      case Thread::Status::CONTROL:
-         return "CONTROL";
       case Thread::Status::ENABLED:
          return "ENABLED";
       case Thread::Status::DISABLED:
@@ -41,10 +39,6 @@ std::istream& operator>>(std::istream& is, Thread::Status& status)
    if (str == "START")
    {
       status = Thread::Status::START;
-   }
-   else if (str == "CONTROL")
-   {
-      status = Thread::Status::CONTROL;
    }
    else if (str == "ENABLED")
    {
