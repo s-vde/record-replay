@@ -216,27 +216,42 @@ auto creator::visitAtomicRMWInst(llvm::AtomicRMWInst& instr) -> return_type
 
 auto creator::visitCallInst(llvm::CallInst& instr) -> return_type
 {
-   llvm::Function* callee = instr.getCalledFunction();
-   // Direct function invocation
-   if (callee)
-   {
-      if (callee->getName() == "pthread_mutex_lock")
-      {
-         return create<lock_instruction>(instr, lock_operation::Lock, instr.getArgOperand(0));
-      }
-      else if (callee->getName() == "pthread_mutex_unlock")
-      {
-         return create<lock_instruction>(instr, lock_operation::Unlock, instr.getArgOperand(0));
-      }
-   }
-   /// @todo Case of indirect function invokation
-   return return_type();
+   return handle_call_and_invoke_instr(instr, instr.getCalledFunction(), instr.arg_operands());
+}
+
+//--------------------------------------------------------------------------------------------------
+
+auto creator::visitInvokeInst(llvm::InvokeInst& instr) -> return_type
+{
+   return handle_call_and_invoke_instr(instr, instr.getCalledFunction(), instr.arg_operands());
 }
 
 //--------------------------------------------------------------------------------------------------
 
 auto creator::visitInstruction(llvm::Instruction& instr) -> return_type
 {
+   return return_type();
+}
+
+//--------------------------------------------------------------------------------------------------
+
+auto creator::handle_call_and_invoke_instr(
+   llvm::Instruction& instr, const llvm::Function* callee,
+   const llvm::iterator_range<llvm::User::const_op_iterator>& arg_operands) -> return_type
+{
+   // Direct function invocation
+   if (callee)
+   {
+      if (callee->getName() == "pthread_mutex_lock")
+      {
+         return create<lock_instruction>(instr, lock_operation::Lock, *arg_operands.begin());
+      }
+      else if (callee->getName() == "pthread_mutex_unlock")
+      {
+         return create<lock_instruction>(instr, lock_operation::Unlock, *arg_operands.begin());
+      }
+   }
+   /// @todo Case of indirect function invokation
    return return_type();
 }
 
