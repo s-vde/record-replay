@@ -68,18 +68,11 @@ int Scheduler::spawn_thread(pthread_t* pid, const pthread_attr_t* attr,
 void Scheduler::post_memory_instruction(const int op, const Object& obj, bool is_atomic,
                                         const std::string& file_name, unsigned int line_number)
 {
-   try
-   {
-      const Thread::tid_t tid = find_tid(pthread_self());
-      Instruction instruction(tid, static_cast<Object::Op>(op), obj, is_atomic);
-      instruction.add_meta_data({file_name, line_number});
-      DEBUGF_SYNC(thread_str(tid), "post_memory_instruction", instruction, "\n");
-      post_task(instruction);
-   }
-   catch (const unregistered_thread&)
-   {
-      DEBUGF_SYNC("[unregistered_thread]", "post_memory_instruction", "", "\n");
-   }
+   post_task(
+      [op, &obj, is_atomic](const auto tid) {
+         return program_model::Instruction(tid, static_cast<Object::Op>(op), obj, is_atomic);
+      },
+      file_name, line_number);
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -87,18 +80,11 @@ void Scheduler::post_memory_instruction(const int op, const Object& obj, bool is
 void Scheduler::post_lock_instruction(const int op, const Object& obj, const std::string& file_name,
                                       unsigned int line_number)
 {
-   try
-   {
-      const Thread::tid_t tid = find_tid(pthread_self());
-      Instruction instruction(tid, static_cast<Object::Op>(op), obj, false);
-      instruction.add_meta_data({file_name, line_number});
-      DEBUGF_SYNC(thread_str(tid), "post_lock_instruction", instruction, "\n");
-      post_task(instruction);
-   }
-   catch (const unregistered_thread&)
-   {
-      DEBUGF_SYNC("[unregistered_thread]", "post_lock_instruction", "", "\n");
-   }
+   post_task(
+      [op, &obj](const auto tid) {
+         return program_model::Instruction(tid, static_cast<Object::Op>(op), obj, false);
+      },
+      file_name, line_number);
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -155,16 +141,27 @@ void Scheduler::register_thread(const std::lock_guard<std::mutex>& registration_
 
 //--------------------------------------------------------------------------------------------------
 
-void Scheduler::post_task(const Instruction& instruction)
+void Scheduler::post_task(const create_instruction_t& create_instruction,
+                          const std::string& file_name, unsigned int line_number)
 {
-   if (runs_controlled())
+   try
    {
-      const auto tid = instruction.tid();
-      mPool.yield(tid);
-      mPool.post(tid, instruction);
+      const auto tid = find_tid(pthread_self());
+      auto instruction = create_instruction(tid);
+      instruction.add_meta_data({file_name, line_number});
+      DEBUGF_SYNC(thread_str(tid), "post_task", instruction, "\n");
+      if (runs_controlled())
+      {
+         mPool.yield(tid);
+         mPool.post(tid, instruction);
 
-      DEBUGF_SYNC(thread_str(tid), "wait_for_turn", "", "\n");
-      mControl.wait_for_turn(tid);
+         DEBUGF_SYNC(thread_str(tid), "wait_for_turn", "", "\n");
+         mControl.wait_for_turn(tid);
+      }
+   }
+   catch (const unregistered_thread&)
+   {
+      DEBUGF_SYNC("[unregistered_thread]", "post_memory_instruction", "", "\n");
    }
 }
 

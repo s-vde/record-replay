@@ -94,10 +94,14 @@ private:
 
    void register_thread(const std::lock_guard<std::mutex>& registration_lock, pthread_t* const pid);
 
-   /// @brief If the program runs Scheduler-controlled, this function posts the given instruction in
-   /// mPool and calls Scheduler::wait_for_turn.
+   /// @brief If the program runs Scheduler-controlled, this function creates an instruction and
+   /// posts it mPool. Then it calls Scheduler::wait_for_turn.
 
-   void post_task(const Instruction& instruction);
+   using create_instruction_t =
+      std::function<program_model::Instruction(program_model::Thread::tid_t)>;
+
+   void post_task(const create_instruction_t&, const std::string& file_name,
+                  unsigned int line_number);
 
    Thread::tid_t find_tid(const pthread_t& pid);
 
