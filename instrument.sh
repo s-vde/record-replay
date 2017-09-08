@@ -43,7 +43,10 @@ test -d ${output_dir} || mkdir -p ${output_dir}
 ${compiler} ${compiler_options} -c ${input_program} -o ${output_dir}/${input_filename}.bc
 
 echo [record-replay] run instrumentation pass
-${llvm_bin}/opt -S -load ${pass_build} ${pass_name} < ${output_dir}/${input_filename}.bc > ${output_dir}/${input_filename}.instrumented.bc
+${llvm_bin}/opt -load ${pass_build} ${pass_name} < ${output_dir}/${input_filename}.bc > ${output_dir}/${input_filename}.instrumented.bc
+
+echo [record-replay] create human-readable dump of instrumented file
+${llvm_bin}/llvm-dis ${output_dir}/${input_filename}.instrumented.bc -o ${output_dir}/${input_filename}.instrumented.txt
 
 echo [record-replay] link with scheduler library
 ${compiler} ${output_dir}/${input_filename}.instrumented.bc \
