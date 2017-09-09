@@ -36,8 +36,6 @@ add_library(RecordReplayScheduler SHARED
   ${CPP_UTILS}/src/utils_io.cpp
   ${PROGRAM_MODEL}/execution.cpp
   ${PROGRAM_MODEL}/execution_io.cpp
-  ${PROGRAM_MODEL}/instruction.cpp
-  ${PROGRAM_MODEL}/instruction_io.cpp
   ${PROGRAM_MODEL}/object.cpp
   ${PROGRAM_MODEL}/object_io.cpp
   ${PROGRAM_MODEL}/state.cpp

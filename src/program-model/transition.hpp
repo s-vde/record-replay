@@ -1,7 +1,7 @@
 #pragma once
 
-#include "instruction.hpp"
 #include "state.hpp"
+#include "visible_instruction.hpp"
 
 #include <vector>
 
@@ -17,11 +17,12 @@ namespace program_model {
 class Transition
 {
 public:
+   using instruction_t = visible_instruction_t;
    using StatePtr = typename State::SharedPtr;
 
    /// @brief Constructor
 
-   Transition(const int index, StatePtr pre, const Instruction& instr, StatePtr post);
+   Transition(const int index, StatePtr pre, const instruction_t& instr, StatePtr post);
 
    /// @brief Getter.
 
@@ -29,7 +30,7 @@ public:
 
    /// @brief Getter.
 
-   const Instruction& instr() const;
+   const instruction_t& instr() const;
 
    /// @brief Getter.
 
@@ -66,7 +67,7 @@ public:
 private:
    int mIndex;
    StatePtr mPre;
-   const Instruction mInstr;
+   const instruction_t mInstr;
    StatePtr mPost;
 
 }; // end class Transition

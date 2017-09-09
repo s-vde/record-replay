@@ -1,9 +1,9 @@
 
 #include "transition_io.hpp"
 
-#include "instruction_io.hpp"
 #include "state_io.hpp"
 #include "transition.hpp"
+#include "visible_instruction_io.hpp"
 
 #include <utils_io.hpp>
 
@@ -44,10 +44,9 @@ std::string to_string_pre_post(const Transition& trans)
 
 std::string to_short_string(const Transition& trans)
 {
-   std::string str = std::to_string(trans.index());
-   str += " ";
-   str += utils::io::to_string(trans.instr());
-   return str;
+   std::stringstream stream;
+   stream << trans.index() << " " << trans.instr();
+   return stream.str();
 }
 
 //--------------------------------------------------------------------------------------------------

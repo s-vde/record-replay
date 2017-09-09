@@ -1,8 +1,8 @@
 
 #include "state_io.hpp"
 
-#include "instruction_io.hpp"
 #include "state.hpp"
+#include "visible_instruction_io.hpp"
 
 #include <container_io.hpp>
 

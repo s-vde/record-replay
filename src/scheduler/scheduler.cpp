@@ -2,7 +2,6 @@
 #include "scheduler.hpp"
 
 #include <execution_io.hpp>
-#include <instruction_io.hpp>
 #include <visible_instruction_io.hpp>
 
 #include <container_io.hpp>
@@ -69,10 +68,10 @@ void Scheduler::post_memory_instruction(const int op, const Object& obj, bool is
                                         const std::string& file_name, unsigned int line_number)
 {
    post_task(
-      [op, &obj, is_atomic](const auto tid) {
-         return program_model::Instruction(tid, static_cast<Object::Op>(op), obj, is_atomic);
-      },
-      file_name, line_number);
+      [op, &obj, is_atomic, &file_name, line_number](const auto tid) {
+         return program_model::memory_instruction(tid, static_cast<memory_operation>(op), obj,
+                                                  is_atomic, {file_name, line_number});
+      });
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -81,10 +80,9 @@ void Scheduler::post_lock_instruction(const int op, const Object& obj, const std
                                       unsigned int line_number)
 {
    post_task(
-      [op, &obj](const auto tid) {
-         return program_model::Instruction(tid, static_cast<Object::Op>(op), obj, false);
-      },
-      file_name, line_number);
+      [op, &obj, &file_name, line_number](const auto tid) {
+         return program_model::lock_instruction(tid, static_cast<lock_operation>(op), obj, {file_name, line_number});
+      });
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -141,14 +139,12 @@ void Scheduler::register_thread(const std::lock_guard<std::mutex>& registration_
 
 //--------------------------------------------------------------------------------------------------
 
-void Scheduler::post_task(const create_instruction_t& create_instruction,
-                          const std::string& file_name, unsigned int line_number)
+void Scheduler::post_task(const create_instruction_t& create_instruction)
 {
    try
    {
       const auto tid = find_tid(pthread_self());
       auto instruction = create_instruction(tid);
-      instruction.add_meta_data({file_name, line_number});
       DEBUGF_SYNC(thread_str(tid), "post_task", instruction, "\n");
       if (runs_controlled())
       {
@@ -301,7 +297,7 @@ bool Scheduler::schedule_thread(const Thread::tid_t& tid)
 {
    if (mPool.status_protected(tid) == Thread::Status::ENABLED)
    {
-      const Instruction task = mPool.set_current(tid);
+      const program_model::visible_instruction_t task = mPool.set_current(tid);
       DEBUGFNL("Scheduler", "schedule_thread", tid, "next task = " << task);
       mControl.grant_execution_right(tid);
       mLocVars->increase_task_nr();

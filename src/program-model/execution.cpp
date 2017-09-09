@@ -3,7 +3,7 @@
 
 
 namespace program_model {
-    
+
 //--------------------------------------------------------------------------------------------------
 
 Execution::Execution(const unsigned int nr_threads, const StatePtr& s0)
@@ -139,12 +139,12 @@ const State& Execution::final() const
 
 //--------------------------------------------------------------------------------------------------
 
-void Execution::push_back(const Instruction& instr, const StatePtr& post)
+void Execution::push_back(const instruction_t& instr, const StatePtr& post)
 {
    /// @pre !empty() || initialized()
    assert(!empty() || initialized());
    mExecution.emplace_back(size() + 1, final_ptr(), instr, post);
-   if (is_lock_access(instr))
+   if (boost::get<lock_instruction>(&instr))
    {
       set_contains_locks();
    }

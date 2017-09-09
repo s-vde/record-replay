@@ -13,7 +13,7 @@ using namespace program_model;
 //--------------------------------------------------------------------------------------------------
 /// @file task_pool.hpp
 /// @author Susanne van den Elsen
-/// @date 2015-2016
+/// @date 2015-2017
 //--------------------------------------------------------------------------------------------------
 
 
@@ -21,7 +21,7 @@ namespace scheduler {
 
 /// TaskPool encapsulates
 /// - a map mThreads mapping Thread::tid_t's to a Thread object;
-/// - a map mTasks mapping Thread::tid_t's to the next Instruction posted by the
+/// - a map mTasks mapping Thread::tid_t's to the next instruction posted by the
 /// corresponding Thread.
 /// A TaskPool is equiped with a locking mechanism that allows threads to safely
 /// operate on its data concurrently.
@@ -31,9 +31,11 @@ class TaskPool
 {
 public:
    // Type definitions
-   using Tasks = std::unordered_map<Thread::tid_t, Instruction>;
+   using object_t = program_model::Object;
+   using instruction_t = program_model::visible_instruction_t;
+   using Tasks = std::unordered_map<Thread::tid_t, instruction_t>;
    using Threads = std::unordered_map<Thread::tid_t, Thread>;
-   using objects_t = std::unordered_map<program_model::Object::ptr_t, object_state>;
+   using objects_t = std::unordered_map<object_t::ptr_t, object_state>;
 
    /// @brief Mytex protecting mTasks, mStatus, mNr_registered, and mModified.
 
@@ -63,7 +65,7 @@ public:
 
    /// @brief Posts the given task for Thread tid in mTasks.
 
-   void post(const Thread::tid_t& tid, const Instruction& task);
+   void post(const Thread::tid_t& tid, const instruction_t& task);
 
    /// @brief Handles a yield if tid is the currently executing Thread.
 
@@ -78,9 +80,9 @@ public:
    void wait_all_finished();
 
    /// @brief Sets mCurrentTask to the task posted by Thread tid and removes the
-   /// Instruction from mTasks. Returns a copy of the current task.
+   /// instruction from mTasks. Returns a copy of the current task.
 
-   Instruction set_current(const Thread::tid_t& tid);
+   instruction_t set_current(const Thread::tid_t& tid);
 
    /// @brief Returns the size of mTasks.
 
@@ -95,7 +97,7 @@ public:
    Tasks::const_iterator tasks_cbegin() const;
    Tasks::const_iterator tasks_cend() const;
 
-   std::shared_ptr<const Instruction> current_task() const;
+   std::shared_ptr<const instruction_t> current_task() const;
 
    /// @brief mMutex-protected read-only access to the status of Thread tid.
 
@@ -135,7 +137,7 @@ private:
 
    /// @brief A shared pointer to the task currently being executed.
 
-   std::shared_ptr<Instruction> mCurrentTask;
+   std::shared_ptr<instruction_t> mCurrentTask;
 
    /// @brief Datastructure mapping Thread::tid_t's to the associated Thread.
 
@@ -161,9 +163,9 @@ private:
 
    void set_status(const Thread::tid_t&, const Thread::Status&);
 
-   void update_object_post(const Thread::tid_t& tid, const Instruction& task);
+   void update_object_post(const Thread::tid_t& tid, const instruction_t& task);
 
-   void update_object_yield(const Instruction& task);
+   void update_object_yield(const instruction_t& task);
 
    /// @brief Set the status of all Threads with lock requests on obj to the given one.
 

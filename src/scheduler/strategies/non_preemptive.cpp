@@ -17,12 +17,13 @@ NonPreemptive::result_t NonPreemptive::select(const TaskPool& pool,
    program_model::Thread::tid_t next = *(selection.begin());
    if (task_nr > 0)
    {
-      std::shared_ptr<const program_model::Instruction> current = pool.current_task();
+      const auto current = pool.current_task();
+      const auto tid = boost::apply_visitor(program_model::get_tid(), *current);
       /// @pre task_nr > 0 -> pool.current_task != nullptr
       assert(current != nullptr);
-      if (selection.find(current->tid()) != selection.end())
+      if (selection.find(tid) != selection.end())
       {
-         next = current->tid();
+         next = tid;
       }
    }
    return result_t(Status::RUNNING, next);

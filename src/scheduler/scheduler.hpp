@@ -13,7 +13,7 @@
 //--------------------------------------------------------------------------------------------------
 /// @file scheduler.hpp
 /// @author Susanne van den Elsen
-/// @date 2015
+/// @date 2015-2017
 //--------------------------------------------------------------------------------------------------
 
 
@@ -98,10 +98,9 @@ private:
    /// posts it mPool. Then it calls Scheduler::wait_for_turn.
 
    using create_instruction_t =
-      std::function<program_model::Instruction(program_model::Thread::tid_t)>;
+      std::function<program_model::visible_instruction_t(program_model::Thread::tid_t)>;
 
-   void post_task(const create_instruction_t&, const std::string& file_name,
-                  unsigned int line_number);
+   void post_task(const create_instruction_t&);
 
    Thread::tid_t find_tid(const pthread_t& pid);
 

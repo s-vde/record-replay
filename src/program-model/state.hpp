@@ -1,13 +1,13 @@
 #pragma once
 
-#include "instruction.hpp"
+#include "visible_instruction.hpp"
 
 #include <unordered_map>
 
 //--------------------------------------------------------------------------------------------------
 /// @file state.hpp
 /// @author Susanne van den Elsen
-/// @date 2015
+/// @date 2015-2017
 //--------------------------------------------------------------------------------------------------
 
 
@@ -15,7 +15,7 @@ namespace program_model {
 
 struct next_t
 {
-   Instruction instr;
+   visible_instruction_t instr;
    bool enabled;
 };
 

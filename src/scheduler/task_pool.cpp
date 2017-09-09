@@ -1,7 +1,6 @@
 
 #include "task_pool.hpp"
 
-#include "instruction_io.hpp"
 #include "object_io.hpp"
 #include "thread_io.hpp"
 
@@ -30,7 +29,7 @@ void TaskPool::register_thread(const Thread::tid_t& tid)
 
 //--------------------------------------------------------------------------------------------------
 
-void TaskPool::post(const Thread::tid_t& tid, const Instruction& task)
+void TaskPool::post(const Thread::tid_t& tid, const instruction_t& task)
 {
    std::lock_guard<std::mutex> lock_mutex(mMutex);
    auto task_it(mTasks.find(tid));
@@ -47,7 +46,7 @@ void TaskPool::post(const Thread::tid_t& tid, const Instruction& task)
 void TaskPool::yield(const Thread::tid_t& tid)
 {
    std::lock_guard<std::mutex> guard(mMutex);
-   if (mCurrentTask && mCurrentTask->tid() == tid)
+   if (mCurrentTask && boost::apply_visitor(program_model::get_tid(), *mCurrentTask) == tid)
    {
       DEBUGF_SYNC("Taskpool", "yield", tid, "\n");
       update_object_yield(*mCurrentTask);
@@ -82,13 +81,13 @@ void TaskPool::wait_all_finished()
 
 //--------------------------------------------------------------------------------------------------
 
-Instruction TaskPool::set_current(const Thread::tid_t& tid)
+instruction_t TaskPool::set_current(const Thread::tid_t& tid)
 {
    std::lock_guard<std::mutex> guard(mMutex);
    auto it = mTasks.find(tid);
    /// @pre mTasks.find(tid) != mTasks.end()
    assert(it != mTasks.end());
-   mCurrentTask = std::shared_ptr<Instruction>(new Instruction(it->second));
+   mCurrentTask = std::shared_ptr<instruction_t>(new instruction_t(it->second));
    mTasks.erase(it); // noexcept
    return *mCurrentTask;
 }
@@ -123,7 +122,7 @@ TaskPool::Tasks::const_iterator TaskPool::tasks_cend() const
 
 //--------------------------------------------------------------------------------------------------
 
-std::shared_ptr<const Instruction> TaskPool::current_task() const
+std::shared_ptr<const instruction_t> TaskPool::current_task() const
 {
    return mCurrentTask;
 }
@@ -180,7 +179,7 @@ Tids TaskPool::enabled_set_protected()
 
 NextSet TaskPool::nextset_protected()
 {
-   using zip_function_t = std::function<next_t(const Instruction&, const Thread&)>;
+   using zip_function_t = std::function<next_t(const instruction_t&, const Thread&)>;
    const zip_function_t zip_function = [](const auto& task, const auto& thread) {
       return next_t{task, thread.status() == Thread::Status::ENABLED};
    };
@@ -237,36 +236,46 @@ void TaskPool::set_status(const Thread::tid_t& tid, const Thread::Status& status
 
 //--------------------------------------------------------------------------------------------------
 
-void TaskPool::update_object_post(const Thread::tid_t& tid, const Instruction& task)
+void TaskPool::update_object_post(const Thread::tid_t& tid, const instruction_t& task)
 {
-   program_model::Object::ptr_t address = task.obj().address();
+   const auto& operand = boost::apply_visitor(program_model::get_operand(), task);
+   const program_model::Object::ptr_t address = operand.address();
    std::lock_guard<std::mutex> lock(m_objects_mutex);
    // Create a new object if one with name does not exist in m_objects
    if (m_objects.find(address) == m_objects.end())
    {
-      m_objects.insert(objects_t::value_type(address, object_state(task.obj())));
+      m_objects.insert(objects_t::value_type(address, object_state(operand)));
    }
    // Update m_data_races
-   auto& operand = m_objects.find(address)->second;
-   auto data_races = get_data_races(operand, task);
+   auto& operand_state = m_objects.find(address)->second;
+   auto data_races = get_data_races(operand_state)(task);
    std::move(data_races.begin(), data_races.end(), std::back_inserter(m_data_races));
    // Update status of threads operating on same operand
-   const bool enabled = operand.request(task);
+   const bool enabled = operand_state.request(task);
    set_status(tid, (enabled ? Thread::Status::ENABLED : Thread::Status::DISABLED));
 }
 
 //--------------------------------------------------------------------------------------------------
 
-void TaskPool::update_object_yield(const Instruction& task)
+void TaskPool::update_object_yield(const instruction_t& task)
 {
+   const auto& operand = boost::apply_visitor(program_model::get_operand(), task);
+   const auto tid = boost::apply_visitor(program_model::get_tid(), task);
    std::lock_guard<std::mutex> lock(m_objects_mutex);
-   auto obj = m_objects.find(task.obj().address());
+   auto obj = m_objects.find(operand.address());
    /// @pre mLockObs.find(task.obj()) != mLockObs.end()
    assert(obj != m_objects.end());
-   obj->second.perform(task.tid());
-   const bool is_lock = task.op() == Object::Op::LOCK;
-   set_status_of_waiting_on(obj->second,
-                            (is_lock ? Thread::Status::DISABLED : Thread::Status::ENABLED));
+   obj->second.perform(tid);
+   try
+   {
+      const auto& lock_instr = boost::get<program_model::lock_instruction>(task);
+      const bool is_lock = lock_instr.operation() == program_model::lock_operation::Lock;
+      set_status_of_waiting_on(obj->second,
+                               (is_lock ? Thread::Status::DISABLED : Thread::Status::ENABLED));
+   }
+   catch (const boost::bad_get&)
+   {
+   }
 }
 
 //--------------------------------------------------------------------------------------------------

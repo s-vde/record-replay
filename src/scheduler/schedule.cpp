@@ -12,7 +12,7 @@ namespace scheduler
    {
       schedule_t s;
       std::transform(E.begin(), E.end(), std::back_inserter(s),
-                     [] (const auto& trans) { return trans.instr().tid(); });
+                     [] (const auto& trans) { return boost::apply_visitor(program_model::get_tid(), trans.instr()); });
       return s;
    }
    

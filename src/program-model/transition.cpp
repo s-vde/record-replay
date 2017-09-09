@@ -6,7 +6,7 @@ namespace program_model {
 
 //--------------------------------------------------------------------------------------------------
 
-Transition::Transition(const int index, StatePtr pre, const Instruction& instr, StatePtr post)
+Transition::Transition(const int index, StatePtr pre, const instruction_t& instr, StatePtr post)
 : mIndex(index)
 , mPre(pre)
 , mInstr(instr)
@@ -23,7 +23,7 @@ int Transition::index() const
 
 //--------------------------------------------------------------------------------------------------
 
-const Instruction& Transition::instr() const
+auto Transition::instr() const -> const instruction_t&
 {
    return mInstr;
 }

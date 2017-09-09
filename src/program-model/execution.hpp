@@ -14,12 +14,11 @@
 
 namespace program_model {
 
-using thread_execution_t = std::vector<Instruction>;
-
 class Execution
 {
 public:
    using index_t = unsigned int;
+   using instruction_t = visible_instruction_t;
    using transition_t = Transition;
    using execution_t = std::vector<transition_t>;
    using StatePtr = typename transition_t::StatePtr;
@@ -76,7 +75,7 @@ public:
 
    // #todo Assertion should be trivial when s0 is a required argument to
    // Execution's constructor.
-   void push_back(const Instruction& instr, const StatePtr& post);
+   void push_back(const instruction_t& instr, const StatePtr& post);
 
    /// @note The popped Transition t still has (valid) pointers to t.pre and t.post.
 
@@ -125,5 +124,8 @@ private:
    friend std::istream& operator>>(std::istream&, Execution&);
 
 }; // end class template Execution<State>
+
+// Type definitions
+using thread_execution_t = std::vector<Execution::instruction_t>;
 
 } // end namespace program_model

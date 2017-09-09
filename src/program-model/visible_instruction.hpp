@@ -42,11 +42,12 @@ public:
    }
 
    visible_instruction(const thread_id_t& tid, const operation_t& operation,
-                       const memory_location_t& operand)
+                       const memory_location_t& operand,
+                       const meta_data_t& meta_data = {"unknown", 0})
    : m_tid(tid)
    , m_operation(operation)
    , m_operand(operand)
-   , m_meta_data({"unknown", 0})
+   , m_meta_data(meta_data)
    {
    }
 
@@ -55,6 +56,7 @@ public:
    const memory_location_t& operand() const { return m_operand; }
    void add_meta_data(const meta_data_t& meta_data) { m_meta_data = meta_data; }
    const meta_data_t& meta_data() const { return m_meta_data; }
+
 private:
    thread_id_t m_tid;
    operation_t m_operation;
@@ -82,7 +84,7 @@ namespace detail {
 
 template <typename thread_id_t, typename memory_location_t>
 class memory_instruction
-   : public visible_instruction<thread_id_t, memory_operation, memory_location_t>
+: public visible_instruction<thread_id_t, memory_operation, memory_location_t>
 {
 public:
    using base_type = visible_instruction<thread_id_t, memory_operation, memory_location_t>;
@@ -97,13 +99,15 @@ public:
    }
 
    memory_instruction(const thread_id_t& tid, const memory_operation& operation,
-                      const memory_location_t& operand, bool is_atomic)
-   : base_type(tid, operation, operand)
+                      const memory_location_t& operand, bool is_atomic,
+                      const meta_data_t& meta_data = {"unknown", 0})
+   : base_type(tid, operation, operand, meta_data)
    , m_is_atomic(is_atomic)
    {
    }
 
    bool is_atomic() const { return m_is_atomic; }
+
 private:
    bool m_is_atomic;
 
@@ -140,8 +144,8 @@ public:
    }
 
    lock_instruction(const thread_id_t& tid, const lock_operation& operation,
-                    const memory_location_t& operand)
-   : base_type(tid, operation, operand)
+                    const memory_location_t& operand, const meta_data_t& meta_data = {"unknown", 0})
+   : base_type(tid, operation, operand, meta_data)
    {
    }
 

@@ -5,6 +5,7 @@
 #include "state_io.hpp"
 #include "transition.hpp"
 #include "transition_io.hpp"
+#include "visible_instruction_io.hpp"
 
 #include <utils_io.hpp>
 
@@ -145,12 +146,11 @@ std::istream& operator>>(std::istream& is, Execution& E)
       if (i == E.size())
       {
          int index;
-         Instruction instr;
-         is >> index >> instr;
+         visible_instruction_t instruction;
          std::shared_ptr<State> post{};
-         if (is >> post)
+         if (is >> index >> instruction >> post)
          {
-            E.push_back(instr, post);
+            E.push_back(instruction, post);
          }
          else
          {
