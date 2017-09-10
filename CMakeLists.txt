@@ -20,3 +20,4 @@ message(STATUS "Using CPP_UTILS ${CPP_UTILS}")
 
 add_subdirectory(src/llvm-pass)
 add_subdirectory(src/scheduler)
+add_subdirectory(tests)
