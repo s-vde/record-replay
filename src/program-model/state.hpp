@@ -19,6 +19,11 @@ struct next_t
    bool enabled;
 };
 
+inline bool operator==(const next_t& lhs, const next_t& rhs)
+{
+   return lhs.instr == rhs.instr && lhs.enabled == rhs.enabled;
+}
+
 // Type definitions
 using NextSet = std::unordered_map<Thread::tid_t, next_t>;
 
@@ -32,6 +37,8 @@ public:
    /// @brief Constructor.
 
    State(const Tids& enabled, const NextSet& next);
+   
+   bool operator==(const State&) const;
 
    /// @brief Getter.
 

@@ -21,6 +21,11 @@ struct meta_data_t
 
 }; // end struct meta_data_t
 
+inline bool operator==(const meta_data_t& lhs, const meta_data_t& rhs)
+{
+   return lhs.file_name == rhs.file_name && lhs.line_number == rhs.line_number;
+}
+
 //--------------------------------------------------------------------------------------------------
 
 
@@ -219,6 +224,28 @@ struct get_meta_data : public boost::static_visitor<meta_data_t>
 }; // end struct get_meta_data
 
 } // end namespace detail
+
+//--------------------------------------------------------------------------------------------------
+
+
+template <typename thread_id_t, typename memory_location_t>
+bool operator==(const detail::memory_instruction<thread_id_t, memory_location_t>& lhs,
+                const detail::memory_instruction<thread_id_t, memory_location_t>& rhs)
+{
+   return lhs.tid() == rhs.tid() && lhs.operation() == rhs.operation() &&
+          lhs.operand() == rhs.operand() && lhs.is_atomic() == rhs.is_atomic() &&
+          lhs.meta_data() == rhs.meta_data();
+}
+
+//--------------------------------------------------------------------------------------------------
+
+template <typename thread_id_t, typename memory_location_t>
+bool operator==(const detail::lock_instruction<thread_id_t, memory_location_t>& lhs,
+                const detail::lock_instruction<thread_id_t, memory_location_t>& rhs)
+{
+   return lhs.tid() == rhs.tid() && lhs.operation() == rhs.operation() &&
+          lhs.operand() == rhs.operand() && lhs.meta_data() == rhs.meta_data();
+}
 
 //--------------------------------------------------------------------------------------------------
 

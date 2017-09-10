@@ -16,6 +16,14 @@ Transition::Transition(const int index, StatePtr pre, const instruction_t& instr
 
 //--------------------------------------------------------------------------------------------------
 
+bool Transition::operator==(const Transition& other) const
+{
+   return mIndex == other.mIndex && *mPre == *(other.mPre) && mInstr == other.mInstr &&
+          *mPost == *(other.mPost);
+}
+
+//--------------------------------------------------------------------------------------------------
+
 int Transition::index() const
 {
    return mIndex;

@@ -20,6 +20,13 @@ State::State(const Tids& enabled, const NextSet& next)
 
 //--------------------------------------------------------------------------------------------------
 
+bool State::operator==(const State& other) const
+{
+   return mEnabled == other.mEnabled && mNext == other.mNext;
+}
+
+//--------------------------------------------------------------------------------------------------
+
 std::string State::tag() const
 {
    return mTag;

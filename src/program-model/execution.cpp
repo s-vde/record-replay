@@ -16,6 +16,14 @@ Execution::Execution(const unsigned int nr_threads, const StatePtr& s0)
 
 //--------------------------------------------------------------------------------------------------
 
+bool Execution::operator==(const Execution& other)
+{
+   return mExecution == other.mExecution && *mS0 == *(other.mS0) &&
+          mNrThreads == other.mNrThreads && mStatus == other.mStatus;
+}
+
+//--------------------------------------------------------------------------------------------------
+
 auto Execution::operator[](const index_t index) -> transition_t&
 {
    return mExecution[index - 1];

@@ -36,6 +36,8 @@ public:
 
    explicit Execution(const unsigned int nr_threads, const StatePtr& s0 = nullptr);
 
+   bool operator==(const Execution&);
+
    /// @brief Subscript operator.
    /// @note Indexing starts at 1.
 

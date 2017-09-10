@@ -24,6 +24,8 @@ public:
 
    Transition(const int index, StatePtr pre, const instruction_t& instr, StatePtr post);
 
+   bool operator==(const Transition&) const;
+
    /// @brief Getter.
 
    int index() const;
