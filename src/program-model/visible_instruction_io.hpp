@@ -32,7 +32,7 @@ std::ostream& operator<<(
 {
    os << "memory_instruction " << (instruction.is_atomic() ? "atomic " : "non-atomic ")
       << instruction.tid() << " " << to_string(instruction.operation()) << " "
-      << to_string(instruction.operand());
+      << to_string(instruction.operand()) << " " << instruction.meta_data();
    return os;
 }
 
@@ -47,7 +47,7 @@ std::ostream& operator<<(
    std::ostream& os, const detail::lock_instruction<thread_id_t, memory_location_t>& instruction)
 {
    os << "lock_instruction " << instruction.tid() << " " << to_string(instruction.operation())
-      << " " << to_string(instruction.operand());
+      << " " << to_string(instruction.operand()) << " " << instruction.meta_data();
    return os;
 }
 
@@ -65,18 +65,20 @@ std::istream& operator>>(std::istream& is,
       thread_id_t tid;
       memory_operation operation;
       memory_location_t operand;
-      is >> atomic >> tid >> operation >> operand;
+      meta_data_t meta_data;
+      is >> atomic >> tid >> operation >> operand >> meta_data;
       instruction = detail::memory_instruction<thread_id_t, memory_location_t>(
-         tid, operation, operand, atomic == "atomic");
+         tid, operation, operand, atomic == "atomic", meta_data);
    }
    else if (type == "lock_instruction")
    {
       thread_id_t tid;
       lock_operation operation;
       memory_location_t operand;
-      is >> operation >> operand;
+      meta_data_t meta_data;
+      is >> tid >> operation >> operand >> meta_data;
       instruction =
-         detail::lock_instruction<thread_id_t, memory_location_t>(tid, operation, operand);
+         detail::lock_instruction<thread_id_t, memory_location_t>(tid, operation, operand, meta_data);
    }
    else
    {
