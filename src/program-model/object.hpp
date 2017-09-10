@@ -16,15 +16,6 @@ class Object
 public:
    using ptr_t = void*;
 
-   enum class Op
-   {
-      READ = 0,
-      WRITE = 1,
-      RMW = 5,
-      UNLOCK = 2,
-      LOCK = 3
-   };
-
    /// @brief Constructor.
    /// @note Default arguments construct dummy Object.
 
