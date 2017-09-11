@@ -21,5 +21,6 @@ std::istream& operator>>(std::istream&, Thread::Status&);
 //--------------------------------------------------------------------------------------------------
 
 std::ostream& operator<<(std::ostream&, const Thread&);
+std::istream& operator>>(std::istream&, Thread&);
 
 } // end namespace program_model

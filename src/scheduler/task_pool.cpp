@@ -14,7 +14,6 @@
 
 #include <algorithm>
 #include <assert.h>
-#include <iostream>
 
 namespace scheduler {
 
@@ -238,20 +237,26 @@ void TaskPool::set_status(const Thread::tid_t& tid, const Thread::Status& status
 
 void TaskPool::update_object_post(const Thread::tid_t& tid, const instruction_t& task)
 {
-   const auto& operand = boost::apply_visitor(program_model::get_operand(), task);
-   const program_model::Object::ptr_t address = operand.address();
+   const auto operand = boost::apply_visitor(program_model::get_operand(), task);
+   const auto* mem_location = boost::get<program_model::Object>(&operand);
+   if (!mem_location)
+   {
+       throw std::invalid_argument("Thread operands are currently not supported");
+   }
+   bool enabled = true;
+   const program_model::Object::ptr_t address = mem_location->address();
    std::lock_guard<std::mutex> lock(m_objects_mutex);
    // Create a new object if one with name does not exist in m_objects
    if (m_objects.find(address) == m_objects.end())
    {
-      m_objects.insert(objects_t::value_type(address, object_state(operand)));
+      m_objects.insert(objects_t::value_type(address, object_state(*mem_location)));
    }
    // Update m_data_races
    auto& operand_state = m_objects.find(address)->second;
    auto data_races = get_data_races(operand_state)(task);
    std::move(data_races.begin(), data_races.end(), std::back_inserter(m_data_races));
    // Update status of threads operating on same operand
-   const bool enabled = operand_state.request(task);
+   enabled = operand_state.request(task);
    set_status(tid, (enabled ? Thread::Status::ENABLED : Thread::Status::DISABLED));
 }
 
@@ -259,22 +264,21 @@ void TaskPool::update_object_post(const Thread::tid_t& tid, const instruction_t&
 
 void TaskPool::update_object_yield(const instruction_t& task)
 {
-   const auto& operand = boost::apply_visitor(program_model::get_operand(), task);
-   const auto tid = boost::apply_visitor(program_model::get_tid(), task);
-   std::lock_guard<std::mutex> lock(m_objects_mutex);
-   auto obj = m_objects.find(operand.address());
-   /// @pre mLockObs.find(task.obj()) != mLockObs.end()
-   assert(obj != m_objects.end());
-   obj->second.perform(tid);
-   try
+   const auto operand = boost::apply_visitor(program_model::get_operand(), task);
+   if (const auto* mem_location = boost::get<program_model::Object>(&operand))
    {
-      const auto& lock_instr = boost::get<program_model::lock_instruction>(task);
-      const bool is_lock = lock_instr.operation() == program_model::lock_operation::Lock;
-      set_status_of_waiting_on(obj->second,
-                               (is_lock ? Thread::Status::DISABLED : Thread::Status::ENABLED));
-   }
-   catch (const boost::bad_get&)
-   {
+       const auto tid = boost::apply_visitor(program_model::get_tid(), task);
+       std::lock_guard<std::mutex> lock(m_objects_mutex);
+       auto obj = m_objects.find(mem_location->address());
+       /// @pre mLockObs.find(task.obj()) != mLockObs.end()
+       assert(obj != m_objects.end());
+       obj->second.perform(tid);
+       if (const auto* lock_instr = boost::get<program_model::lock_instruction>(&task))
+       {
+          const bool is_lock = lock_instr->operation() == program_model::lock_operation::Lock;
+          set_status_of_waiting_on(obj->second,
+                                   (is_lock ? Thread::Status::DISABLED : Thread::Status::ENABLED));
+       }
    }
 }
 

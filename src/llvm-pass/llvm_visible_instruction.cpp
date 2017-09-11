@@ -46,6 +46,12 @@ void wrap::operator()(const lock_instruction& instruction)
 
 //--------------------------------------------------------------------------------------------------
 
+void wrap::operator()(const thread_management_instruction& instruction)
+{
+}
+
+//--------------------------------------------------------------------------------------------------
+
 auto wrap::construct_arguments(const memory_instruction& instruction) -> arguments_t
 {
    using namespace llvm;
@@ -70,6 +76,13 @@ auto wrap::construct_arguments(const lock_instruction& instruction) -> arguments
    Value* arg_file_name = construct_file_name(instruction.meta_data().file_name);
    Value* arg_line_number = construct_line_number(instruction.meta_data().line_number);
    return {arg_operation, arg_operand, arg_file_name, arg_line_number};
+}
+
+//--------------------------------------------------------------------------------------------------
+
+auto wrap::construct_arguments(const thread_management_instruction& instruction) -> arguments_t
+{
+   return {};
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -242,7 +255,18 @@ auto creator::handle_call_and_invoke_instr(
    // Direct function invocation
    if (callee)
    {
-      if (callee->getName() == "pthread_mutex_lock")
+      using namespace program_model;
+      if (callee->getName() == "pthread_create")
+      {
+         return create<thread_management_instruction>(instr, thread_management_operation::Spawn,
+                                                      *arg_operands.begin());
+      }
+      else if (callee->getName() == "\01_pthread_join")
+      {
+         return create<thread_management_instruction>(instr, thread_management_operation::Join,
+                                                      *arg_operands.begin());
+      }
+      else if (callee->getName() == "pthread_mutex_lock")
       {
          return create<lock_instruction>(instr, lock_operation::Lock, *arg_operands.begin());
       }

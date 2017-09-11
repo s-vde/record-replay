@@ -24,6 +24,7 @@ std::istream& operator>>(std::istream& is, meta_data_t& meta_data)
 
 //--------------------------------------------------------------------------------------------------
 
+
 std::string to_string(const memory_operation& operation)
 {
    switch (operation)
@@ -56,6 +57,7 @@ std::istream& operator>>(std::istream& is, memory_operation& operation)
 
 //--------------------------------------------------------------------------------------------------
 
+
 std::string to_string(const lock_operation& operation)
 {
    switch (operation)
@@ -77,6 +79,35 @@ std::istream& operator>>(std::istream& is, lock_operation& operation)
       operation = lock_operation::Lock;
    else if (str == "Unlock")
       operation = lock_operation::Unlock;
+   else
+      is.setstate(std::ios::failbit);
+   return is;
+}
+
+//--------------------------------------------------------------------------------------------------
+
+
+std::string to_string(const thread_management_operation& operation)
+{
+   switch (operation)
+   {
+      case thread_management_operation::Spawn:
+         return "Spawn";
+      case thread_management_operation::Join:
+         return "Join";
+   }
+}
+
+//--------------------------------------------------------------------------------------------------
+
+std::istream& operator>>(std::istream& is, thread_management_operation& operation)
+{
+   std::string str;
+   is >> str;
+   if (str == "Spawn")
+      operation = thread_management_operation::Spawn;
+   else if (str == "Join")
+      operation = thread_management_operation::Join;
    else
       is.setstate(std::ios::failbit);
    return is;

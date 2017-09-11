@@ -35,6 +35,7 @@ class Functions;
 // Type definitions
 using thread_id_t = llvm::Value*;
 using operand_t = llvm::Value*;
+using thread_t = llvm::Value*;
 
 template <typename operation_t>
 using visible_instruction =
@@ -44,7 +45,11 @@ using memory_instruction = program_model::detail::memory_instruction<thread_id_t
 
 using lock_instruction = program_model::detail::lock_instruction<thread_id_t, operand_t>;
 
-using visible_instruction_t = program_model::detail::visible_instruction_t<thread_id_t, operand_t>;
+using thread_management_instruction =
+   program_model::detail::thread_management_instruction<thread_id_t, thread_t>;
+
+using visible_instruction_t =
+   program_model::detail::visible_instruction_t<thread_id_t, operand_t, thread_t>;
 
 //--------------------------------------------------------------------------------------------------
 
@@ -56,10 +61,12 @@ struct wrap : public boost::static_visitor<void>
 
    void operator()(const memory_instruction& instruction);
    void operator()(const lock_instruction& instruction);
+   void operator()(const thread_management_instruction& instruction);
 
 private:
    arguments_t construct_arguments(const memory_instruction& instruction);
    arguments_t construct_arguments(const lock_instruction& instruction);
+   arguments_t construct_arguments(const thread_management_instruction& instruction);
 
    llvm::Value* construct_operand(const operand_t& operand);
    llvm::Value* construct_file_name(const std::string& file_name);
@@ -104,7 +111,7 @@ private:
 
 }; // end struct creator
 
-} // end namesapce llvm_visible_instruction
+} // end namespace llvm_visible_instruction
 
 //--------------------------------------------------------------------------------------------------
 } // end namespace concurrency_passes

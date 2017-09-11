@@ -24,7 +24,14 @@ public:
       DISABLED,
       FINISHED
    };
-
+   
+   /// @brief Default constructor.
+   /// @note Required for istream right shift operator.
+   
+   Thread();
+   
+   bool operator==(const Thread&) const;
+   
    /// @brief Constructor.
 
    explicit Thread(const tid_t&, Status status = Status::START);
@@ -44,8 +51,8 @@ public:
 private:
    tid_t mTid;
    Status mStatus;
-
-   friend Thread read_Thread(std::istream&);
+   
+   friend std::istream& operator>>(std::istream&, Thread&);
 
 }; // end class Thread
 

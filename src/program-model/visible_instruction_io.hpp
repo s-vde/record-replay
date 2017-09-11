@@ -1,6 +1,7 @@
 #pragma once
 
 #include "object_io.hpp"
+#include "thread_io.hpp"
 #include "visible_instruction.hpp"
 
 #include <iostream>
@@ -38,6 +39,7 @@ std::ostream& operator<<(
 
 //--------------------------------------------------------------------------------------------------
 
+
 std::string to_string(const lock_operation& operation);
 
 std::istream& operator>>(std::istream& is, lock_operation& operation);
@@ -53,9 +55,29 @@ std::ostream& operator<<(
 
 //--------------------------------------------------------------------------------------------------
 
-template <typename thread_id_t, typename memory_location_t>
-std::istream& operator>>(std::istream& is,
-                         detail::visible_instruction_t<thread_id_t, memory_location_t>& instruction)
+
+std::string to_string(const thread_management_operation& operation);
+
+std::istream& operator>>(std::istream& is, thread_management_operation& operation);
+
+template <typename thread_id_t, typename thread_t>
+std::ostream& operator<<(
+   std::ostream& os,
+   const detail::thread_management_instruction<thread_id_t, thread_t>& instruction)
+{
+   os << "thread_management_instruction " << instruction.tid() << " "
+      << to_string(instruction.operation()) << " " << instruction.operand() << " "
+      << instruction.meta_data();
+   return os;
+}
+
+//--------------------------------------------------------------------------------------------------
+
+
+template <typename thread_id_t, typename memory_location_t, typename thread_t>
+std::istream& operator>>(
+   std::istream& is,
+   detail::visible_instruction_t<thread_id_t, memory_location_t, thread_t>& instruction)
 {
    std::string type;
    is >> type;
@@ -77,8 +99,18 @@ std::istream& operator>>(std::istream& is,
       memory_location_t operand;
       meta_data_t meta_data;
       is >> tid >> operation >> operand >> meta_data;
-      instruction =
-         detail::lock_instruction<thread_id_t, memory_location_t>(tid, operation, operand, meta_data);
+      instruction = detail::lock_instruction<thread_id_t, memory_location_t>(tid, operation,
+                                                                             operand, meta_data);
+   }
+   else if (type == "thread_management_instruction")
+   {
+      thread_id_t tid;
+      thread_management_operation operation;
+      thread_t operand;
+      meta_data_t meta_data;
+      is >> tid >> operation >> operand >> meta_data;
+      instruction = detail::thread_management_instruction<thread_id_t, thread_t>(
+         tid, operation, operand, meta_data);
    }
    else
    {

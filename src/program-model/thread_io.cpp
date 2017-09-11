@@ -67,4 +67,12 @@ std::ostream& operator<<(std::ostream& os, const Thread& thread)
 
 //--------------------------------------------------------------------------------------------------
 
+std::istream& operator>>(std::istream& is, Thread& thread)
+{
+    is >> thread.mTid >> thread.mStatus;
+    return is;
+}
+
+//--------------------------------------------------------------------------------------------------
+
 } // end namespace program_model
