@@ -5,23 +5,16 @@ namespace scheduler
 {
    //-------------------------------------------------------------------------------------
    
-   Program::Program(const std::string& dir, const std::string& file, const unsigned int n)
+   Program::Program(const std::string& dir, const std::string& file)
    : mDir(dir + "/instrumented")
    , mFile(file)
-   , mNrThreads(n) { }
+   { }
    
    //-------------------------------------------------------------------------------------
     
    const std::string& Program::file() const
    {
       return mFile;
-   }
-   
-   //-------------------------------------------------------------------------------------
-    
-   unsigned int Program::nr_threads() const
-   {
-      return mNrThreads;
    }
    
    //-------------------------------------------------------------------------------------

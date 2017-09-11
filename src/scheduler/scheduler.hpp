@@ -160,10 +160,6 @@ public:
 
    /// @brief Getter.
 
-   int nr_threads() const;
-
-   /// @brief Getter.
-
    const schedule_t& schedule() const;
 
    /// @brief Getter.
@@ -173,10 +169,6 @@ public:
    void increase_task_nr();
 
 private:
-   /// @brief The (fixed) number of threads in the program.
-
-   int mNrThreads;
-
    /// @brief The schedule under which the scheduler is driving the program.
 
    schedule_t mSchedule;

@@ -15,26 +15,27 @@
 namespace scheduler {
 
 // forward declarations
-class Program;
 class SchedulerSettings;
 
-
 //--------------------------------------------------------------------------------------------------
+
+
+using program_t = std::string;
 
 /// @brief Run the program under the settings currently in schedules/settings.txt.
 /// @note If schedules/settings.txt does not exist, the Scheduler may not behave as
 /// expected.
 
-void run_under_schedule(const Program&, const schedule_t&);
+void run_under_schedule(const program_t&, const schedule_t&);
 
-void run_under_schedule(const Program&, const schedule_t&, const SchedulerSettings&);
+void run_under_schedule(const program_t&, const schedule_t&, const SchedulerSettings&);
 
 //--------------------------------------------------------------------------------------------------
 
 
 void write_settings(const SchedulerSettings&);
 
-void write_schedules(const Program&, const schedule_t&);
+void write_schedules(const schedule_t&);
 
 //--------------------------------------------------------------------------------------------------
 

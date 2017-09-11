@@ -24,19 +24,13 @@ namespace scheduler
       
       /// @brief Constructor.
       
-      Program(const std::string& dir, const std::string& file, const unsigned int n);
+      Program(const std::string& dir, const std::string& file);
         
       //----------------------------------------------------------------------------------
       
       /// @brief Getter.
       
       const std::string& file() const;
-      
-      //----------------------------------------------------------------------------------
-      
-      /// @brief Getter.
-      
-      unsigned int nr_threads() const;
       
       //----------------------------------------------------------------------------------
         
@@ -53,9 +47,6 @@ namespace scheduler
 		
       /// @brief The filename of the program.
       std::string mFile;
-		
-      /// @brief The number of threads in the program.
-      unsigned int mNrThreads;
         
    }; // end class Program
    

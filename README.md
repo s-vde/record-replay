@@ -39,7 +39,6 @@ In order to instrument an input program, run
      <record_replay_build_dir>
      <path_to_llvm> 
      <path_to_input_program>
-     <nr_of_threads>
      <path_to_output_dir>
      (compiler_options)
 ```
@@ -50,5 +49,4 @@ where all path variables can be either relative or absolute to the current direc
 ## Running the Instrumented Program
 When the instrumented program `<output_dir>/<program_name>` is run, it expects the following files (relative to the place from where it is run):
 - `schedules/schedule.txt`: containing the schedule under which the program is to be run (e.g. `<0,0,1,1>`)
-- `schedules/threads.txt`: containing the number of threads in the program
 - `schedules/settings.txt`: containing the name of the strategy for selecting the next thread, if not by schedule. The builtin strategies are `Random` and `NonPreemptive`.

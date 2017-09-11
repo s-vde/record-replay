@@ -3,6 +3,7 @@
 #include "transition.hpp"
 
 #include <assert.h>
+#include <set>
 #include <vector>
 
 //--------------------------------------------------------------------------------------------------
@@ -34,7 +35,7 @@ public:
 
    /// @brief Constructs an empty Execution object with given number of threads.
 
-   explicit Execution(const unsigned int nr_threads, const StatePtr& s0 = nullptr);
+   explicit Execution(const StatePtr& s0 = nullptr);
 
    bool operator==(const Execution&);
 
@@ -110,8 +111,8 @@ private:
    /// @brief Pointer to the initial State of the Execution.
    StatePtr mS0;
 
-   /// @brief The number of threads in the program to which this Execution belongs.
-   unsigned int mNrThreads;
+   /// @brief Set of Threads being spawn during this Execution.
+   std::set<Thread::tid_t> mThreads;
 
    /// @brief The (current/termination) status of the Execution object.
    Status mStatus;

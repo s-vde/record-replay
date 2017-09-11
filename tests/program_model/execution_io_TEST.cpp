@@ -73,7 +73,7 @@ void execution_roundtrip_test()
    
    const auto state_8 = std::shared_ptr<State>(new State({}, {}));
    
-   Execution execution_write{2, state_0};
+   Execution execution_write{state_0};
    execution_write.push_back(next_0[0].instr, state_1); // spawn
    execution_write.push_back(next_1[0].instr, state_2); // load
    execution_write.push_back(next_2[1].instr, state_3); // store
@@ -88,7 +88,7 @@ void execution_roundtrip_test()
       output_file << execution_write;
    }
    
-   Execution execution_read = Execution(2);
+   Execution execution_read{};
    {
       std::ifstream input_file("execution_io_TEST.txt");
       input_file >> execution_read;

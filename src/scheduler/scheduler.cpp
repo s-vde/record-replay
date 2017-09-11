@@ -314,7 +314,7 @@ void Scheduler::run()
    wait_until_main_thread_registered();
    mPool.wait_until_unfinished_threads_have_posted();
 
-   Execution E(mLocVars->nr_threads(), mPool.program_state());
+   Execution E(mPool.program_state());
 
    while (status() == Execution::Status::RUNNING)
    {
@@ -462,8 +462,7 @@ void Scheduler::dump_data_races() const
 // Class Scheduler::LocalVars
 
 Scheduler::LocalVars::LocalVars()
-: mNrThreads(0)
-, mSchedule()
+: mSchedule()
 , mTaskNr(0)
 {
    if (!utils::io::read_from_file("schedules/schedule.txt", mSchedule))
@@ -471,18 +470,6 @@ Scheduler::LocalVars::LocalVars()
       ERROR("Scheduler::LocalVars()", "reading schedules/schedule.txt");
       mSchedule = {};
    }
-   if (!utils::io::read_from_file("schedules/threads.txt", mNrThreads))
-   {
-      ERROR("Scheduler::LocalVars()", "reading schedules/threads.txt");
-      // #todo Handle such an error
-   }
-}
-
-//--------------------------------------------------------------------------------------------------
-
-int Scheduler::LocalVars::nr_threads() const
-{
-   return mNrThreads;
 }
 
 //--------------------------------------------------------------------------------------------------

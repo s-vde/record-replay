@@ -6,11 +6,10 @@ namespace program_model {
 
 //--------------------------------------------------------------------------------------------------
 
-Execution::Execution(const unsigned int nr_threads, const StatePtr& s0)
-: mExecution()
-, mS0(s0)
-, mNrThreads(nr_threads)
+Execution::Execution(const StatePtr& s0)
+: mS0(s0)
 , mStatus(Status::RUNNING)
+, mThreads({0})
 {
 }
 
@@ -18,8 +17,8 @@ Execution::Execution(const unsigned int nr_threads, const StatePtr& s0)
 
 bool Execution::operator==(const Execution& other)
 {
-   return mExecution == other.mExecution && *mS0 == *(other.mS0) &&
-          mNrThreads == other.mNrThreads && mStatus == other.mStatus;
+   return mExecution == other.mExecution && *mS0 == *(other.mS0) && mThreads == other.mThreads &&
+          mStatus == other.mStatus;
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -156,6 +155,13 @@ void Execution::push_back(const instruction_t& instr, const StatePtr& post)
    {
       set_contains_locks();
    }
+   else if (const auto* thread_management_instr = boost::get<thread_management_instruction>(&instr))
+   {
+      if (thread_management_instr->operation() == thread_management_operation::Spawn)
+      {
+         mThreads.insert(thread_management_instr->operand().tid());
+      }
+   }
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -186,7 +192,7 @@ auto Execution::final_ptr() -> StatePtr
 
 unsigned int Execution::nr_threads() const
 {
-   return mNrThreads;
+   return mThreads.size();
 }
 
 //--------------------------------------------------------------------------------------------------

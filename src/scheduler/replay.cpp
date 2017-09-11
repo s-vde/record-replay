@@ -1,7 +1,6 @@
 
 #include "replay.hpp"
 
-#include "program.hpp"
 #include "scheduler_settings.hpp"
 
 #include <container_output.hpp>
@@ -14,15 +13,15 @@ namespace scheduler {
 
 //--------------------------------------------------------------------------------------------------
 
-void run_under_schedule(const Program& program, const schedule_t& schedule)
+void run_under_schedule(const program_t& program, const schedule_t& schedule)
 {
-   write_schedules(program, schedule);
-   system(program.to_string().c_str());
+   write_schedules(schedule);
+   system(program.c_str());
 }
 
 //--------------------------------------------------------------------------------------------------
 
-void run_under_schedule(const Program& program, const schedule_t& schedule,
+void run_under_schedule(const program_t& program, const schedule_t& schedule,
                         const SchedulerSettings& settings)
 {
    write_settings(settings);
@@ -41,13 +40,10 @@ void write_settings(const SchedulerSettings& settings)
 
 //--------------------------------------------------------------------------------------------------
 
-void write_schedules(const Program& program, const schedule_t& schedule)
+void write_schedules(const schedule_t& schedule)
 {
    system("test -d schedules || mkdir schedules");
-   std::ofstream ofs("schedules/threads.txt");
-   ofs << program.nr_threads();
-   ofs.close();
-   ofs.open("schedules/schedule.txt");
+   std::ofstream ofs("schedules/schedule.txt");
    ofs << schedule;
    ofs.close();
 }
