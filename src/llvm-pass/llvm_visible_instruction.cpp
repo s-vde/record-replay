@@ -48,6 +48,32 @@ void wrap::operator()(const lock_instruction& instruction)
 
 void wrap::operator()(const thread_management_instruction& instruction)
 {
+   assert(llvm::isa<llvm::CallInst>(&*m_instruction_it) ||
+          llvm::isa<llvm::InvokeInst>(&*m_instruction_it));
+
+   switch (instruction.operation())
+   {
+      case program_model::thread_management_operation::Spawn:
+      {
+         const auto arguments = construct_arguments(instruction);
+         auto* tid = llvm::CallInst::Create(m_functions.Wrapper_post_spawn_instruction(), arguments,
+                                            "", &*m_instruction_it);
+         ++m_instruction_it;
+         llvm::CallInst::Create(m_functions.Wrapper_register_thread(),
+                                arguments_t{instruction.operand(), tid}, "", &*m_instruction_it);
+         --m_instruction_it;
+         break;
+      }
+      case program_model::thread_management_operation::Join:
+      {
+         const auto arguments = construct_arguments(instruction);
+         llvm::CallInst::Create(m_functions.Wrapper_post_join_instruction(), arguments, "",
+                                &*m_instruction_it);
+         break;
+      }
+      default:
+         break;
+   }
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -82,7 +108,10 @@ auto wrap::construct_arguments(const lock_instruction& instruction) -> arguments
 
 auto wrap::construct_arguments(const thread_management_instruction& instruction) -> arguments_t
 {
-   return {};
+   using namespace llvm;
+   Value* arg_file_name = construct_file_name(instruction.meta_data().file_name);
+   Value* arg_line_number = construct_line_number(instruction.meta_data().line_number);
+   return {instruction.operand(), arg_file_name, arg_line_number};
 }
 
 //--------------------------------------------------------------------------------------------------

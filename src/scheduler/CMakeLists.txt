@@ -43,6 +43,7 @@ add_library(RecordReplayScheduler SHARED
   scheduler_settings.cpp
   scheduler.cpp
   task_pool.cpp
+  thread_state.cpp
   strategies/non_preemptive.cpp
   strategies/random.cpp
   strategies/selector_register.cpp

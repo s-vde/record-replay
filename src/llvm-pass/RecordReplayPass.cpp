@@ -36,27 +36,6 @@ void LightWeightPass::onStartOfPass(llvm::Module& module)
 
 //--------------------------------------------------------------------------------------------------
 
-void LightWeightPass::instrument_pthread_create_calls()
-{
-   using namespace llvm;
-   Function* pthread_create = mFunctions.Function_pthread_create();
-   for (auto* user : pthread_create->users())
-   {
-      if (CallInst* call = dyn_cast<CallInst>(user))
-      {
-         instrumentation_utils::replace_call(call, mFunctions.Function_pthread_create(),
-                                             mFunctions.Wrapper_spawn_thread(), {});
-      }
-      else if (InvokeInst* invoke = dyn_cast<InvokeInst>(user))
-      {
-         instrumentation_utils::replace_invoke(invoke, mFunctions.Function_pthread_create(),
-                                               mFunctions.Wrapper_spawn_thread(), {});
-      }
-   }
-}
-
-//--------------------------------------------------------------------------------------------------
-
 void LightWeightPass::runOnVisibleInstruction(llvm::Module& module, llvm::Function& function,
                                               llvm::inst_iterator inst_it,
                                               const visible_instruction_t& visible_instruction)
@@ -80,7 +59,19 @@ bool LightWeightPass::isBlackListed(const llvm::Function& function) const
 
 void LightWeightPass::onEndOfPass(llvm::Module& module)
 {
-   instrument_pthread_create_calls();
+   if (auto* main = module.getFunction("main"))
+   {
+      instrumentation_utils::add_call_begin(main, mFunctions.Wrapper_register_main_thread(), {});
+      for (auto inst_it = inst_begin(main); inst_it != inst_end(main); ++inst_it)
+      {
+         auto& instruction = *inst_it;
+         if (llvm::ReturnInst* return_instruction = llvm::dyn_cast<llvm::ReturnInst>(&instruction))
+         {
+            llvm::IRBuilder<> builder(&instruction);
+            builder.CreateCall(mFunctions.Wrapper_finish(), {}, "");
+         }
+      }
+   }
 }
 
 //--------------------------------------------------------------------------------------------------

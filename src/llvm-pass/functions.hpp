@@ -34,7 +34,10 @@ public:
    llvm::Function* Wrapper_finish() const;
    llvm::Function* Wrapper_post_lock_instruction() const;
    llvm::Function* Wrapper_post_memory_instruction() const;
-   llvm::Function* Wrapper_spawn_thread() const;
+   llvm::Function* Wrapper_post_spawn_instruction() const;
+   llvm::Function* Wrapper_post_join_instruction() const;
+   llvm::Function* Wrapper_register_main_thread() const;
+   llvm::Function* Wrapper_register_thread() const;
 
    llvm::Function* Function_pthread_create() const;
 

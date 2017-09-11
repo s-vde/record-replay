@@ -62,23 +62,68 @@ Scheduler::Scheduler()
 
 //--------------------------------------------------------------------------------------------------
 
-Scheduler::~Scheduler()
+void Scheduler::register_main_thread()
 {
-   DEBUGNL("~Scheduler");
-   join();
+   register_thread(pthread_self(), boost::none);
+   mMainThreadRegistered.store(true);
 }
 
 //--------------------------------------------------------------------------------------------------
 
-int Scheduler::spawn_thread(pthread_t* pid, const pthread_attr_t* attr,
-                            void* (*start_routine)(void*), void* args)
+Thread::tid_t Scheduler::register_thread(const pthread_t& pid,
+                                         boost::optional<program_model::Thread::tid_t> tid)
 {
+   DEBUGF_SYNC(thread_str(pid), "register_thread", "", "\n");
    std::lock_guard<std::mutex> lock(mRegMutex);
-   int ret = pthread_create(pid, attr, start_routine, args);
-   // pid only holds useful data once pthread_create returns
-   register_thread(lock, *pid);
+   if (!tid)
+   {
+      tid = get_fresh_tid(lock);
+   }
+   mThreads.insert(TidMap::value_type(pid, *tid));
+   mPool.register_thread(*tid);
+   mControl.register_thread(*tid);
+   DEBUGF_SYNC(thread_str(*tid), "register_thread", "pid=" << pid_to_string(pid), "\n");
    mRegCond.notify_all();
-   return ret;
+   return *tid;
+}
+
+//--------------------------------------------------------------------------------------------------
+
+program_model::Thread::tid_t Scheduler::post_spawn_instruction(pthread_t* pid,
+                                                               const std::string& file_name,
+                                                               unsigned int line_number)
+{
+   const auto new_tid = get_fresh_tid(std::lock_guard<std::mutex>(mRegMutex));
+
+   post_task([new_tid, &file_name, line_number](const auto tid) {
+      return program_model::thread_management_instruction(tid, thread_management_operation::Spawn,
+                                                          program_model::Thread(new_tid),
+                                                          {file_name, line_number});
+   });
+
+   // The thread about to be spawn cannot be registered yet, because pid only holds useful
+   // data once pthread_create returns
+   return new_tid;
+}
+
+//--------------------------------------------------------------------------------------------------
+
+void Scheduler::post_join_instruction(pthread_t pid, const std::string& file_name,
+                                      unsigned int line_number)
+{
+   try
+   {
+      const auto tid_joined = find_tid(pid);
+      post_task([tid_joined, &file_name, line_number](const auto tid) {
+         return program_model::thread_management_instruction(tid, thread_management_operation::Join,
+                                                             program_model::Thread(tid_joined),
+                                                             {file_name, line_number});
+      });
+   }
+   catch (const unregistered_thread&)
+   {
+      DEBUGF_SYNC("", "post_join_thread", "unregistered thread " << pid_to_string(pid), "\n");
+   }
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -86,11 +131,10 @@ int Scheduler::spawn_thread(pthread_t* pid, const pthread_attr_t* attr,
 void Scheduler::post_memory_instruction(const int op, const Object& obj, bool is_atomic,
                                         const std::string& file_name, unsigned int line_number)
 {
-   post_task(
-      [op, &obj, is_atomic, &file_name, line_number](const auto tid) {
-         return program_model::memory_instruction(tid, static_cast<memory_operation>(op), obj,
-                                                  is_atomic, {file_name, line_number});
-      });
+   post_task([op, &obj, is_atomic, &file_name, line_number](const auto tid) {
+      return program_model::memory_instruction(tid, static_cast<memory_operation>(op), obj,
+                                               is_atomic, {file_name, line_number});
+   });
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -98,31 +142,38 @@ void Scheduler::post_memory_instruction(const int op, const Object& obj, bool is
 void Scheduler::post_lock_instruction(const int op, const Object& obj, const std::string& file_name,
                                       unsigned int line_number)
 {
-   post_task(
-      [op, &obj, &file_name, line_number](const auto tid) {
-         return program_model::lock_instruction(tid, static_cast<lock_operation>(op), obj, {file_name, line_number});
-      });
+   post_task([op, &obj, &file_name, line_number](const auto tid) {
+      return program_model::lock_instruction(tid, static_cast<lock_operation>(op), obj,
+                                             {file_name, line_number});
+   });
 }
 
 //--------------------------------------------------------------------------------------------------
 
 void Scheduler::finish()
 {
-   if (runs_controlled())
+   try
    {
-      try
-      {
-         const Thread::tid_t tid = find_tid(pthread_self());
+      const Thread::tid_t tid = find_tid(pthread_self());
 
+      if (runs_controlled())
+      {
          mPool.yield(tid);
 
          DEBUGFNL(thread_str(tid), "finish", "", "");
-         mPool.set_status_protected(tid, Thread::Status::FINISHED);
+         mPool.finish(tid);
       }
-      catch (const unregistered_thread&)
+
+      // The main thread is responsible for joining the scheduler thread
+      if (tid == 0)
       {
-         DEBUGF_SYNC("[unregistered_thread]", "finish", "", "\n");
+         join();
       }
+   }
+   catch (const unregistered_thread&)
+   {
+      DEBUGF_SYNC("[unregistered_thread]", "finish", "", "\n");
+      return;
    }
 }
 
@@ -145,39 +196,55 @@ void Scheduler::join()
 // SCHEDULER INTERNAL
 //--------------------------------------------------------------------------------------------------
 
-void Scheduler::register_thread(const std::lock_guard<std::mutex>& registration_lock,
-                                const pthread_t& pid)
+Thread::tid_t Scheduler::get_fresh_tid(const std::lock_guard<std::mutex>& registration_lock)
 {
    const Thread::tid_t tid = mNrRegistered;
    ++mNrRegistered;
-   mThreads.insert(TidMap::value_type(pid, tid));
-   mPool.register_thread(tid);
-   mControl.register_thread(tid);
-   DEBUGF_SYNC(thread_str(tid), "register_thread", "", "\n");
+   return tid;
 }
 
 //--------------------------------------------------------------------------------------------------
 
 void Scheduler::post_task(const create_instruction_t& create_instruction)
 {
-   try
+   if (!mMainThreadRegistered.load())
    {
-      const auto tid = find_tid(pthread_self());
-      auto instruction = create_instruction(tid);
-      DEBUGF_SYNC(thread_str(tid), "post_task", instruction, "\n");
-      if (runs_controlled())
-      {
-         mPool.yield(tid);
-         mPool.post(tid, instruction);
+      DEBUGF_SYNC("unregistered thread", "post_task", "", "\n");
+      return;
+   }
 
-         DEBUGF_SYNC(thread_str(tid), "wait_for_turn", "", "\n");
-         mControl.wait_for_turn(tid);
-      }
-   }
-   catch (const unregistered_thread&)
+   const auto tid = wait_until_registered();
+   auto instruction = create_instruction(tid);
+   DEBUGF_SYNC(thread_str(tid), "post_task", instruction, "\n");
+   if (runs_controlled())
    {
-      DEBUGF_SYNC("[unregistered_thread]", "post_memory_instruction", "", "\n");
+      mPool.yield(tid);
+      mPool.post(tid, instruction);
+
+      DEBUGF_SYNC(thread_str(tid), "wait_for_turn", "", "\n");
+      mControl.wait_for_turn(tid);
+      DEBUGF_SYNC(thread_str(tid), "take_turn", "", "\n");
    }
+}
+
+//--------------------------------------------------------------------------------------------------
+
+program_model::Thread::tid_t Scheduler::wait_until_registered()
+{
+   const auto pid = pthread_self();
+   Thread::tid_t tid;
+   std::unique_lock<std::mutex> lock(mRegMutex);
+   mRegCond.wait(lock, [this, &pid, &tid]() {
+      DEBUGF_SYNC(thread_str(pid), "wait_until_registered", "", "\n");
+      const auto it = mThreads.find(pid);
+      if (it != mThreads.end())
+      {
+         tid = it->second;
+         return true;
+      }
+      return false;
+   });
+   return tid;
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -244,7 +311,7 @@ std::string Scheduler::thread_str(const pthread_t& pid)
 void Scheduler::run()
 {
    mControl.set_owner(std::this_thread::get_id());
-   wait_all_registered();
+   wait_until_main_thread_registered();
    mPool.wait_until_unfinished_threads_have_posted();
 
    Execution E(mLocVars->nr_threads(), mPool.program_state());
@@ -294,13 +361,12 @@ void Scheduler::run()
 
 // THREAD (PRIVATE)
 
-void Scheduler::wait_all_registered()
+void Scheduler::wait_until_main_thread_registered()
 {
-   std::unique_lock<std::mutex> ul(mRegMutex);
-   // cond WAIT mRegCond
-   mRegCond.wait(ul, [this]() {
-      DEBUGFNL("Scheduler", "wait_all_registered", "", "");
-      return mNrRegistered == mLocVars->nr_threads();
+   std::unique_lock<std::mutex> lock(mRegMutex);
+   mRegCond.wait(lock, [this]() {
+      DEBUGF_SYNC("Scheduler", "wait_until_main_thread_registered", "", "\n");
+      return mMainThreadRegistered.load();
    });
 }
 
@@ -446,10 +512,31 @@ void Scheduler::LocalVars::increase_task_nr()
 
 //--------------------------------------------------------------------------------------------------
 
-int wrapper_spawn_thread(pthread_t* pid, const pthread_attr_t* attr, void* (*start_routine)(void*),
-                         void* args)
+
+void wrapper_register_main_thread()
 {
-   return the_scheduler.spawn_thread(pid, nullptr, start_routine, args);
+   the_scheduler.register_main_thread();
+}
+
+//--------------------------------------------------------------------------------------------------
+
+void wrapper_register_thread(const pthread_t* const pid, const int tid)
+{
+   the_scheduler.register_thread(*pid, tid);
+}
+
+//--------------------------------------------------------------------------------------------------
+
+int wrapper_post_spawn_instruction(pthread_t* pid, const char* file_name, unsigned int line_number)
+{
+   return the_scheduler.post_spawn_instruction(pid, file_name, line_number);
+}
+
+//--------------------------------------------------------------------------------------------------
+
+void wrapper_post_join_instruction(pthread_t pid, const char* file_name, unsigned int line_number)
+{
+   return the_scheduler.post_join_instruction(pid, file_name, line_number);
 }
 
 //--------------------------------------------------------------------------------------------------

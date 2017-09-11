@@ -2,6 +2,7 @@
 
 #include "concurrency_error.hpp"
 #include "object_state.hpp"
+#include "thread_state.hpp"
 
 #include "state.hpp"
 
@@ -36,6 +37,7 @@ public:
    using Tasks = std::unordered_map<Thread::tid_t, instruction_t>;
    using Threads = std::unordered_map<Thread::tid_t, Thread>;
    using objects_t = std::unordered_map<object_t::ptr_t, object_state>;
+   using thread_states_t = std::unordered_map<Thread::tid_t, thread_state>;
 
    /// @brief Mytex protecting mTasks, mStatus, mNr_registered, and mModified.
 
@@ -70,6 +72,10 @@ public:
    /// @brief Handles a yield if tid is the currently executing Thread.
 
    void yield(const Thread::tid_t& tid);
+   
+   /// @brief Handles a finished thread.
+   
+   void finish(const Thread::tid_t& tid);
 
    /// @brief Wait until all unfinished threads have posted a task.
 
@@ -146,6 +152,7 @@ private:
    /// @brief Datastructure containing the objects operated on by the program.
 
    objects_t m_objects;
+   thread_states_t m_thread_states;
 
    std::vector<data_race_t> m_data_races;
 

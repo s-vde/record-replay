@@ -7,6 +7,8 @@
 
 #include <execution.hpp>
 
+#include <boost/optional.hpp>
+
 #include <thread>
 #include <unordered_map>
 
@@ -31,24 +33,30 @@ public:
    /// @{
    /// Lifetime
    Scheduler();
-   ~Scheduler();
    /// @}
 
    // WRAPPERS
 
-   /// @brief Wrapper around pthread_create(pid, attr, start_routine, args). Registers the newly
-   /// created thread with the Scheduler. Called by the spawning thread.
-   ///
+   void register_main_thread();
+
    /// @details Associates pid with a unique Scheduler-internal thread id (tid) in mThreads and
    /// registers the created thread with mPool and mControl. Signals mRegCond when the registration
    /// is finished. Only a single thread at a time can use this functionality, which is important
    /// when threads can spawn other threads and hence multiple threads can be in spawn_thread
    /// concurrently.
-   ///
+
+   Thread::tid_t register_thread(const pthread_t& pid,
+                                 boost::optional<program_model::Thread::tid_t> tid);
+
+   /// @brief Wrapper around pthread_create(pid, attr, start_routine, args). Registers the newly
+   /// created thread with the Scheduler. Called by the spawning thread.
    /// @returns The return value of the pthread_create call.
 
-   int spawn_thread(pthread_t* pid, const pthread_attr_t* attr, void* (*start_routine)(void*),
-                    void* args);
+   Thread::tid_t post_spawn_instruction(pthread_t* pid, const std::string& file_name,
+                                        unsigned int line_number);
+
+   void post_join_instruction(pthread_t pid, const std::string& file_name,
+                              unsigned int line_number);
 
    void post_memory_instruction(const int op, const Object& obj, bool is_atomic,
                                 const std::string& file_name, unsigned int line_number);
@@ -82,6 +90,7 @@ private:
    std::mutex mRegMutex;
    TidMap mThreads;
    int mNrRegistered;
+   std::atomic<bool> mMainThreadRegistered;
    std::condition_variable mRegCond;
 
    Execution::Status mStatus;
@@ -94,15 +103,14 @@ private:
 
    // SCHEDULER INTERNAL
 
-   void register_thread(const std::lock_guard<std::mutex>& registration_lock, const pthread_t& pid);
-
-   /// @brief If the program runs Scheduler-controlled, this function creates an instruction and
-   /// posts it mPool. Then it calls Scheduler::wait_for_turn.
+   Thread::tid_t get_fresh_tid(const std::lock_guard<std::mutex>& registration_lock);
 
    using create_instruction_t =
       std::function<program_model::visible_instruction_t(program_model::Thread::tid_t)>;
 
    void post_task(const create_instruction_t&);
+
+   program_model::Thread::tid_t wait_until_registered();
 
    Thread::tid_t find_tid(const pthread_t& pid);
 
@@ -123,7 +131,7 @@ private:
 
    /// @brief Waits until mNrRegistered == LV.nr_threads.
 
-   void wait_all_registered();
+   void wait_until_main_thread_registered();
 
    /// @brief Schedule the next task of given tid.
    /// @returns true iff scheduling the thread succeeded (i.e. tid is ENABLED.
@@ -187,8 +195,14 @@ private:
 static scheduler::Scheduler the_scheduler;
 
 extern "C" {
-int wrapper_spawn_thread(pthread_t* pid, const pthread_attr_t* attr, void* (*start_routine)(void*),
-                         void* args);
+
+void wrapper_register_main_thread();
+
+void wrapper_register_thread(const pthread_t* const pid, int tid);
+
+int wrapper_post_spawn_instruction(pthread_t*, const char* file_name, unsigned int line_number);
+
+void wrapper_post_join_instruction(pthread_t, const char* file_name, unsigned int line_number);
 
 void wrapper_post_memory_instruction(int operation, void* operand, bool is_atomic,
                                      const char* file_name, unsigned int line_number);

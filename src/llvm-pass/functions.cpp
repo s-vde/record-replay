@@ -39,27 +39,37 @@ void Functions::initialize(llvm::Module& module)
    Type* void_type = Type::getVoidTy(module.getContext());
    Type* void_ptr_type = builder.getInt8PtrTy();
    Type* type_char_ptr = builder.getInt8PtrTy();
-
-   // wrapper_spawn_thread
+   
+   Type* type_opaque_pthread = module.getTypeByName("struct._opaque_pthread_t");
+   if (!type_opaque_pthread)
    {
-      Type* type_pthread = module.getTypeByName("struct._opaque_pthread_t");
-      if (!type_pthread)
-      {
-         throw std::invalid_argument("Type pthread_t not found in module");
-      }
-      Type* type_pthread_id = type_pthread->getPointerTo()->getPointerTo();
-      Type* type_pthread_attr = module.getTypeByName("struct._opaque_pthread_attr_t");
-      if (!type_pthread_attr)
-      {
-         throw std::invalid_argument("Type pthread_attr_t not found in module");
-      }
-      FunctionType* type_start_routine = FunctionType::get(void_ptr_type, {void_ptr_type}, false);
+      throw std::invalid_argument("Type opaque_pthread_t not found in module");
+   }
+   Type* type_pthread = type_opaque_pthread->getPointerTo();
+   Type* type_pthread_id = type_pthread->getPointerTo();
 
-      auto* type = FunctionType::get(builder.getInt32Ty(),
-                                     {type_pthread_id, type_pthread_attr->getPointerTo(),
-                                      type_start_routine->getPointerTo(), void_ptr_type},
-                                     false);
-      add_wrapper_prototype(module, "wrapper_spawn_thread", type, attributes);
+   // Wrapper_register_main_thread
+   {
+       auto* type = FunctionType::get(void_type, {}, false);
+       add_wrapper_prototype(module, "wrapper_register_main_thread", type, attributes);
+   }
+   
+   // Wrapper_register_thread
+   {
+       auto* type = FunctionType::get(void_type, {type_pthread_id, builder.getInt32Ty()}, false);
+       add_wrapper_prototype(module, "wrapper_register_thread", type, attributes);
+   }
+   
+   // wrapper_post_spawn_instruction
+   {
+      auto* type = FunctionType::get(builder.getInt32Ty(), {type_pthread_id, type_char_ptr, builder.getInt32Ty()}, false);
+      add_wrapper_prototype(module, "wrapper_post_spawn_instruction", type, attributes);
+   }
+   
+   // wrapper_post_join_instruction
+   {
+      auto* type = FunctionType::get(void_type, {type_pthread, type_char_ptr, builder.getInt32Ty()}, false);
+      add_wrapper_prototype(module, "wrapper_post_join_instruction", type, attributes);
    }
 
    // wrapper_post_lock_instruction
@@ -122,9 +132,31 @@ llvm::Function* Functions::Wrapper_post_memory_instruction() const
 
 //-----------------------------------------------------------------------------------------------
 
-llvm::Function* Functions::Wrapper_spawn_thread() const
+llvm::Function* Functions::Wrapper_post_spawn_instruction() const
 {
-   return m_wrappers.find("wrapper_spawn_thread")->second;
+   return m_wrappers.find("wrapper_post_spawn_instruction")->second;
+}
+
+//-----------------------------------------------------------------------------------------------
+
+llvm::Function* Functions::Wrapper_post_join_instruction() const
+{
+   return m_wrappers.find("wrapper_post_join_instruction")->second;
+}
+
+
+//-----------------------------------------------------------------------------------------------
+
+llvm::Function* Functions::Wrapper_register_main_thread() const 
+{
+    return m_wrappers.find("wrapper_register_main_thread")->second;
+}
+
+//-----------------------------------------------------------------------------------------------
+
+llvm::Function* Functions::Wrapper_register_thread() const 
+{
+    return m_wrappers.find("wrapper_register_thread")->second;
 }
 
 //-----------------------------------------------------------------------------------------------
