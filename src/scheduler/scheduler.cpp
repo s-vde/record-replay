@@ -12,9 +12,27 @@
 #include <boost/range/algorithm/find_if.hpp>
 
 #include <exception>
+#include <iomanip>
 
 
 namespace scheduler {
+
+//--------------------------------------------------------------------------------------------------
+
+namespace {
+std::string pid_to_string(const pthread_t& pid)
+{
+   std::stringstream stream("0x");
+   stream << std::setfill('0') << std::setw(2);
+   unsigned char* pidc = (unsigned char*)(void*)(&pid);
+   for (size_t i = 0; i < sizeof(pid); ++i)
+   {
+      stream << (unsigned)(pidc[i]);
+   }
+   return stream.str();
+}
+} // end namespace
+
 
 //--------------------------------------------------------------------------------------------------
 
