@@ -34,17 +34,6 @@ include_directories(${CUSTOM_STRATEGIES})
 add_library(RecordReplayScheduler SHARED
   ${CPP_UTILS}/src/binary_sem.cpp
   ${CPP_UTILS}/src/utils_io.cpp
-  ${PROGRAM_MODEL}/execution.cpp
-  ${PROGRAM_MODEL}/execution_io.cpp
-  ${PROGRAM_MODEL}/object.cpp
-  ${PROGRAM_MODEL}/object_io.cpp
-  ${PROGRAM_MODEL}/state.cpp
-  ${PROGRAM_MODEL}/state_io.cpp
-  ${PROGRAM_MODEL}/thread.cpp
-  ${PROGRAM_MODEL}/thread_io.cpp
-  ${PROGRAM_MODEL}/transition.cpp
-  ${PROGRAM_MODEL}/transition_io.cpp
-  ${PROGRAM_MODEL}/visible_instruction_io.cpp
   concurrency_error.cpp
   control.cpp
   object_state.cpp
@@ -63,4 +52,4 @@ add_library(RecordReplayScheduler SHARED
 ####################
 # LINKING
 
-target_link_libraries(RecordReplayScheduler CustomSelectionStrategies)
+target_link_libraries(RecordReplayScheduler RecordReplayProgramModel CustomSelectionStrategies)
