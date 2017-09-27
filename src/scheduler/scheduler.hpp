@@ -194,7 +194,9 @@ void wrapper_register_thread(const pthread_t* const pid, int tid);
 
 int wrapper_post_spawn_instruction(pthread_t*, const char* file_name, unsigned int line_number);
 
-void wrapper_post_join_instruction(pthread_t, const char* file_name, unsigned int line_number);
+void wrapper_post_pthread_join_instruction(pthread_t, const char* file_name, unsigned int line_number);
+
+void wrapper_post_stdthread_join_instruction(std::thread*, const char* file_name, unsigned int line_number);
 
 void wrapper_post_memory_instruction(int operation, void* operand, bool is_atomic,
                                      const char* file_name, unsigned int line_number);

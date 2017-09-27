@@ -25,6 +25,7 @@ namespace concurrency_passes {
 class Functions
 {
 public:
+   using type_map_t = std::unordered_map<std::string, llvm::Type*>;
    using function_map_t = std::unordered_map<std::string, llvm::Function*>;
 
    Functions();
@@ -35,11 +36,15 @@ public:
    llvm::Function* Wrapper_post_lock_instruction() const;
    llvm::Function* Wrapper_post_memory_instruction() const;
    llvm::Function* Wrapper_post_spawn_instruction() const;
-   llvm::Function* Wrapper_post_join_instruction() const;
+   llvm::Function* Wrapper_post_pthread_join_instruction() const;
+   llvm::Function* Wrapper_post_stdthread_join_instruction() const;
    llvm::Function* Wrapper_register_main_thread() const;
    llvm::Function* Wrapper_register_thread() const;
 
    llvm::Function* Function_pthread_create() const;
+   
+   llvm::Type* Type_pthread_t() const;
+   llvm::Type* Type_stdthread() const;
 
    bool blacklisted(const llvm::Function* F) const;
 
@@ -48,6 +53,7 @@ private:
                               llvm::FunctionType* type, llvm::AttributeSet& attributes);
    void register_c_function(const llvm::Module& module, const std::string& name);
 
+   type_map_t m_types;
    function_map_t m_wrappers;
    function_map_t m_c_functions;
 

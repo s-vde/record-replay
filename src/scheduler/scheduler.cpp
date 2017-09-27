@@ -521,9 +521,16 @@ int wrapper_post_spawn_instruction(pthread_t* pid, const char* file_name, unsign
 
 //--------------------------------------------------------------------------------------------------
 
-void wrapper_post_join_instruction(pthread_t pid, const char* file_name, unsigned int line_number)
+void wrapper_post_pthread_join_instruction(pthread_t pid, const char* file_name, unsigned int line_number)
 {
    return the_scheduler.post_join_instruction(pid, file_name, line_number);
+}
+
+//--------------------------------------------------------------------------------------------------
+
+void wrapper_post_stdthread_join_instruction(std::thread* thr, const char* file_name, unsigned int line_number)
+{
+    return the_scheduler.post_join_instruction(thr->native_handle(), file_name, line_number);
 }
 
 //--------------------------------------------------------------------------------------------------
