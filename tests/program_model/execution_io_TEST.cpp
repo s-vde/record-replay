@@ -10,7 +10,7 @@
 namespace program_model {
 namespace test {
 
-void execution_roundtrip_test()
+inline void execution_roundtrip_test()
 {
    int var_1 = 0;
    std::atomic<int> var_2;
@@ -100,10 +100,3 @@ void execution_roundtrip_test()
 
 } // end namespace test
 } // end namespace program_model
-
-
-int main()
-{
-   program_model::test::execution_roundtrip_test();
-   return 0;
-}

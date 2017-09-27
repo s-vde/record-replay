@@ -26,7 +26,7 @@ and required tools with the right configuration can be found in the repository
 Once you have a build of the LLVM Pass Framework, Record-Replay can be built using cmake. By default the build process will look for and use an installed LLVM. A custom built LLVM can be specified as follows:
 
 ```
-cmake -DLLVM_DIR=<path_to_llvm_build_dir>/lib/cmake/llvm 
+cmake -DLLVM_BUILD_DIR=<path_to_llvm_build_dir>
 ```
 
 ---
