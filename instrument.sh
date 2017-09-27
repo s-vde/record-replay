@@ -4,28 +4,23 @@
 # PARAMETERS
 
 record_replay_build=`echo $1`
-llvm_base=`echo $2`
+llvm_bin=`echo $2`
 input_program=`echo $3`
-nr_threads=`echo $4`
-output_dir=`echo $5`
-compiler_options=`echo $6`
+output_dir=`echo $4`
+compiler_options=`echo $5`
 
 
 ####################
 # VARIABLES
 
-here=`pwd .`
-
 pass_build=${record_replay_build}/src/llvm-pass/LLVMRecordReplayPass.dylib
 pass_name="-instrument-record-replay-lw"
 scheduler_build=${record_replay_build}/src/scheduler
 
-llvm_bin=${llvm_base}/build/bin
-
 input_filename=$(basename "${input_program}")
 input_extension="${input_filename##*.}"
 
-compiler_options+=" -O0 -g -DNR_THREADS=${nr_threads} -pthread -emit-llvm "
+compiler_options+=" -O0 -g -pthread -emit-llvm "
 
 if [ ${input_extension} == "c" ]; then
    compiler=${llvm_bin}/clang

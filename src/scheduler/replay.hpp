@@ -8,7 +8,7 @@
 /// @file replay.hpp
 /// @brief Free functions providing an interface to the replay functionality of the Scheduler.
 /// @author Susanne van den Elsen
-/// @date 2015
+/// @date 2015-2017
 //--------------------------------------------------------------------------------------------------
 
 
@@ -30,8 +30,10 @@ void run_under_schedule(const program_t&, const schedule_t&);
 
 void run_under_schedule(const program_t&, const schedule_t&, const SchedulerSettings&);
 
-//--------------------------------------------------------------------------------------------------
-
+#if defined(LLVM_BIN) && defined(RECORD_REPLAY_BUILD_DIR)
+void instrument(const program_t&, const std::string& output_dir,
+                const std::string& compiler_options = "");
+#endif
 
 void write_settings(const SchedulerSettings&);
 

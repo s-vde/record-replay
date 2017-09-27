@@ -22,3 +22,5 @@ add_subdirectory(src/llvm-pass)
 add_subdirectory(src/program-model)
 add_subdirectory(src/scheduler)
 add_subdirectory(tests)
+
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/instrument.sh DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
