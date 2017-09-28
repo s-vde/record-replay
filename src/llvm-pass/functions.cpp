@@ -51,10 +51,10 @@ void Functions::initialize(llvm::Module& module)
    Type* type_pthread_id = m_types["pthread_t"]->getPointerTo();
    
    // std::thread
-   m_types.insert({"std::thread", module.getTypeByName("class.std::__1::thread")});
-   if (!m_types["std::thread"])
+   Type* type_stdthread = module.getTypeByName("class.std::__1::thread");
+   if (type_stdthread)
    {
-       throw std::invalid_argument("Type std::thread not found in module");
+       m_types.insert({"std::thread", type_stdthread});
    }
 
    // Wrapper_register_main_thread
@@ -82,8 +82,9 @@ void Functions::initialize(llvm::Module& module)
    }
    
    // wrapper_post_stdthread_join_instruction
+   if (type_stdthread)
    {
-       auto* type = FunctionType::get(void_type, {m_types["std::thread"]->getPointerTo(), type_char_ptr, builder.getInt32Ty()}, false);
+       auto* type = FunctionType::get(void_type, {type_stdthread->getPointerTo(), type_char_ptr, builder.getInt32Ty()}, false);
        add_wrapper_prototype(module, "wrapper_post_stdthread_join_instruction", type, attributes);
    }
 
@@ -198,7 +199,10 @@ llvm::Type* Functions::Type_pthread_t() const
 
 llvm::Type* Functions::Type_stdthread() const
 {
-    return m_types.find("std::thread")->second;
+    const auto it = m_types.find("std::thread");
+    if (it == m_types.end())
+        throw std::runtime_error("Type std::thread not found in this module");
+    return it->second;
 }
 
 //-----------------------------------------------------------------------------------------------
