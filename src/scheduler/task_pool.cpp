@@ -99,7 +99,7 @@ void TaskPool::wait_all_finished()
    std::unique_lock<std::mutex> ul(mMutex);
    // cond WAIT mModified
    mModified.wait(ul, [this] {
-      DEBUGFNL("TaskPool", "wait_all_finished", "", "");
+      DEBUGF_SYNC("TaskPool", "wait_all_finished", "", "\n");
       return all_finished();
    });
 }
@@ -319,7 +319,7 @@ void TaskPool::update_object_yield(const instruction_t& task)
 
 void TaskPool::set_status_of_waiting_on(const object_state& object, const Thread::Status& status)
 {
-   DEBUGFNL("TaskPool", "set_status_of_waiting_on", object.str() << ", " << to_string(status), "");
+   DEBUGF_SYNC("TaskPool", "set_status_of_waiting_on", object.str() << ", " << to_string(status), "\n");
    std::for_each(object.begin(0), object.end(0),
                  [&status, this](const auto& request) { set_status(request.first, status); });
    std::for_each(object.begin(1), object.end(1),

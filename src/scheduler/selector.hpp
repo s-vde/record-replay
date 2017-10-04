@@ -81,7 +81,7 @@ namespace scheduler
       {
          if (task_nr < schedule.size())
          {
-            DEBUGFNL("Selector", "select", "", "schedule[" << task_nr << "] = " << schedule[task_nr]);
+            DEBUGF_SYNC("Selector", "select", "", "schedule[" << task_nr << "] = " << schedule[task_nr] << "\n");
             return result_t(Status::RUNNING, schedule[task_nr]);
          }
          std::lock_guard<std::mutex> guard(pool.mMutex);

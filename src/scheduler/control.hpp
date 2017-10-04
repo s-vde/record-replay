@@ -4,7 +4,7 @@
 #include "thread.hpp"
 
 // UTILS
-#include "binary_sem.hpp"
+#include <threads/binary_sem.hpp>
 
 // STL
 #include <exception>

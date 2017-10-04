@@ -32,7 +32,7 @@ include_directories(${CUSTOM_STRATEGIES})
 # LIBRARY
 
 add_library(RecordReplayScheduler SHARED
-  ${CPP_UTILS}/src/binary_sem.cpp
+  ${CPP_UTILS}/src/threads/binary_sem.cpp
   ${CPP_UTILS}/src/utils_io.cpp
   concurrency_error.cpp
   control.cpp

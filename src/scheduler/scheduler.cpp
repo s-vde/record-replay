@@ -56,8 +56,8 @@ Scheduler::Scheduler()
 , mSelector(selector_factory(mSettings.strategy_tag()))
 , mThread([this] { return run(); })
 {
-   DEBUGNL("Starting Scheduler");
-   DEBUGNL("schedule:\t" << mLocVars->schedule());
+   DEBUG_SYNC("Starting Scheduler\n");
+   DEBUG_SYNC("schedule:\t" << mLocVars->schedule() << "\n");
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -160,7 +160,7 @@ void Scheduler::finish()
       {
          mPool.yield(tid);
 
-         DEBUGFNL(thread_str(tid), "finish", "", "");
+         DEBUGF_SYNC(thread_str(tid), "finish", "", "\n");
          mPool.finish(tid);
       }
 
@@ -184,11 +184,11 @@ void Scheduler::join()
    if (mThread.joinable())
    {
       mThread.join();
-      DEBUGNL("mTread.joined");
+      DEBUG_SYNC("mTread.joined\n");
    }
    else
    {
-      DEBUGNL("!mThread.joinable()");
+      DEBUG_SYNC("!mThread.joinable()\n");
    }
 }
 
@@ -318,7 +318,7 @@ void Scheduler::run()
 
    while (status() == Execution::Status::RUNNING)
    {
-      DEBUGNL("---------- [round" << mLocVars->task_nr() << "]");
+      DEBUG_SYNC("---------- [round" << mLocVars->task_nr() << "]\n");
       if (mLocVars->task_nr() > 0)
       {
          E.push_back(*mPool.current_task(), mPool.program_state());
@@ -383,7 +383,7 @@ bool Scheduler::schedule_thread(const Thread::tid_t& tid)
    if (mPool.status_protected(tid) == Thread::Status::ENABLED)
    {
       const program_model::visible_instruction_t task = mPool.set_current(tid);
-      DEBUGFNL("Scheduler", "schedule_thread", tid, "next task = " << task);
+      DEBUGF_SYNC("Scheduler", "schedule_thread", tid, "next task = " << task << "\n");
       mControl.grant_execution_right(tid);
       mLocVars->increase_task_nr();
       return true;
@@ -406,7 +406,7 @@ void Scheduler::report_error(const std::string& what)
 
 void Scheduler::close(Execution& E)
 {
-   DEBUGFNL("Scheduler", "close", "", to_string(status()));
+   DEBUGF_SYNC("Scheduler", "close", "", to_string(status()) << "\n");
    if (!runs_controlled())
    {
       mControl.grant_execution_right_all();
