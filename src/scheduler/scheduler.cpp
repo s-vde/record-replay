@@ -45,8 +45,8 @@ class unregistered_thread : public std::exception
 Scheduler::Scheduler()
 : mLocVars(std::make_unique<LocalVars>())
 , mPool()
-, mControl()
 , mThreads()
+, mControllableThreads()
 , mNrRegistered(0)
 , mRegMutex()
 , mRegCond()
@@ -80,8 +80,9 @@ Thread::tid_t Scheduler::register_thread(const pthread_t& pid,
       tid = get_fresh_tid(lock);
    }
    mThreads.insert(TidMap::value_type(pid, *tid));
+   mControllableThreads.emplace(std::piecewise_construct, std::forward_as_tuple(*tid),
+                                std::forward_as_tuple(*tid, mThread.get_id()));
    mPool.register_thread(*tid);
-   mControl.register_thread(*tid);
    DEBUGF_SYNC(thread_str(*tid), "register_thread", "pid=" << pid_to_string(pid), "\n");
    mRegCond.notify_all();
    return *tid;
@@ -220,10 +221,7 @@ void Scheduler::post_task(const create_instruction_t& create_instruction)
    {
       mPool.yield(tid);
       mPool.post(tid, instruction);
-
-      DEBUGF_SYNC(thread_str(tid), "wait_for_turn", "", "\n");
-      mControl.wait_for_turn(tid);
-      DEBUGF_SYNC(thread_str(tid), "take_turn", "", "\n");
+      get_controllable_thread(tid).post_task();
    }
 }
 
@@ -257,6 +255,16 @@ Thread::tid_t Scheduler::find_tid(const pthread_t& pid)
    if (it != mThreads.end())
       return it->second;
    throw unregistered_thread();
+}
+
+//--------------------------------------------------------------------------------------------------
+
+controllable_thread& Scheduler::get_controllable_thread(const program_model::Thread::tid_t tid)
+{
+   std::lock_guard<std::mutex> lock(mRegMutex);
+   auto it = mControllableThreads.find(tid);
+   assert(it != mControllableThreads.end());
+   return it->second;
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -310,7 +318,6 @@ std::string Scheduler::thread_str(const pthread_t& pid)
 // on mPool, but this is not checked/enforced.
 void Scheduler::run()
 {
-   mControl.set_owner(std::this_thread::get_id());
    wait_until_main_thread_registered();
    mPool.wait_until_unfinished_threads_have_posted();
 
@@ -348,7 +355,7 @@ void Scheduler::run()
          set_status(Execution::Status::DEADLOCK);
          break;
       }
-      catch (const Control::permission_denied& e)
+      catch (const controllable_thread::permission_denied& e)
       {
          std::cout << e.what() << "\n";
          throw;
@@ -384,7 +391,7 @@ bool Scheduler::schedule_thread(const Thread::tid_t& tid)
    {
       const program_model::visible_instruction_t task = mPool.set_current(tid);
       DEBUGF_SYNC("Scheduler", "schedule_thread", tid, "next task = " << task << "\n");
-      mControl.grant_execution_right(tid);
+      get_controllable_thread(tid).grant_execution_right();
       mLocVars->increase_task_nr();
       return true;
    }
@@ -409,7 +416,9 @@ void Scheduler::close(Execution& E)
    DEBUGF_SYNC("Scheduler", "close", "", to_string(status()) << "\n");
    if (!runs_controlled())
    {
-      mControl.grant_execution_right_all();
+      std::lock_guard<std::mutex> lock(mRegMutex);
+      std::for_each(mControllableThreads.begin(), mControllableThreads.end(),
+                    [](auto& entry) { entry.second.grant_execution_right(); });
    }
    // finish execution
    try

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "control.hpp"
+#include "controllable_thread.hpp"
 #include "schedule.hpp"
 #include "scheduler_settings.hpp"
 #include "selector_register.hpp"
@@ -40,7 +40,7 @@ public:
    void register_main_thread();
 
    /// @details Associates pid with a unique Scheduler-internal thread id (tid) in mThreads and
-   /// registers the created thread with mPool and mControl. Signals mRegCond when the registration
+   /// creates a controllable_thread in mControllableThreads. Signals mRegCond when the registration
    /// is finished. Only a single thread at a time can use this functionality, which is important
    /// when threads can spawn other threads and hence multiple threads can be in spawn_thread
    /// concurrently.
@@ -79,16 +79,17 @@ private:
 
    // Type definitions
    using TidMap = std::unordered_map<pthread_t, const Thread::tid_t>;
+   using Threads = std::unordered_map<program_model::Thread::tid_t, controllable_thread>;
 
    std::unique_ptr<LocalVars> mLocVars;
    TaskPool mPool;
-   Control mControl;
 
    /// @brief Protects mThreads, mNrRegistered and mRegCond.
    // #todo Look at possibility of using shared_mutex
 
    std::mutex mRegMutex;
    TidMap mThreads;
+   Threads mControllableThreads;
    int mNrRegistered;
    std::atomic<bool> mMainThreadRegistered;
    std::condition_variable mRegCond;
@@ -113,6 +114,8 @@ private:
    program_model::Thread::tid_t wait_until_registered();
 
    Thread::tid_t find_tid(const pthread_t& pid);
+
+   controllable_thread& get_controllable_thread(const program_model::Thread::tid_t tid);
 
    bool runs_controlled();
 
