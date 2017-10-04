@@ -2,16 +2,9 @@
 #include "RecordReplayPass.hpp"
 
 #include "instrumentation_utils.hpp"
-#include "print.hpp"
-
-#include "color_output.hpp"
 
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
-
-#include <cxxabi.h>
-
-#include <exception>
 
 
 namespace concurrency_passes {
@@ -40,9 +33,6 @@ void LightWeightPass::runOnVisibleInstruction(llvm::Module& module, llvm::Functi
                                               llvm::inst_iterator inst_it,
                                               const visible_instruction_t& visible_instruction)
 {
-   //
-   // boost::apply_visitor(concurrency_passes::dump(), visible_instruction);
-   //
    auto wrapper = concurrency_passes::wrap(module, mFunctions, inst_it);
    visible_instruction.apply_visitor(wrapper);
    ++m_nr_instrumented;
@@ -84,15 +74,7 @@ void LightWeightPass::runOnThreadExit(llvm::Function& function, llvm::inst_itera
 
 //--------------------------------------------------------------------------------------------------
 
-std::string LightWeightPass::outputname() const
-{
-   using namespace utils::io;
-   return text_color("LightWeightPass", Color::MAGENTA);
-}
-
-//--------------------------------------------------------------------------------------------------
-
-} // end concurrency_passes
+} // end namespace concurrency_passes
 
 
 static llvm::RegisterPass<concurrency_passes::LightWeightPass> X(

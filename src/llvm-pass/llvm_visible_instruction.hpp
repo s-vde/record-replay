@@ -80,14 +80,6 @@ private:
 
 //--------------------------------------------------------------------------------------------------
 
-struct dump : public boost::static_visitor<void>
-{
-   void operator()(const memory_instruction& instruction) const;
-   void operator()(const lock_instruction& instruction) const;
-
-}; // end struct dump
-
-//--------------------------------------------------------------------------------------------------
 
 namespace llvm_visible_instruction {
 struct creator : public llvm::InstVisitor<creator, boost::optional<visible_instruction_t>>

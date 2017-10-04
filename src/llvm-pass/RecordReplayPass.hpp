@@ -6,8 +6,6 @@
 
 #include <llvm/IR/InstIterator.h>
 
-#include <set>
-
 //--------------------------------------------------------------------------------------------------
 /// @file RecordReplayPass.hpp
 /// @author Susanne van den Elsen
@@ -43,16 +41,7 @@ private:
 
    bool isBlackListed(const llvm::Function& function) const override;
 
-   using FunctionSet = std::set<llvm::Function*>;
-
    Functions mFunctions;
-
-   /// @brief Replaces all calls to pthread_create(args) with calls to
-   /// Wrapper_spawn_thread(args).
-
-   void instrument_pthread_create_calls();
-
-   std::string outputname() const;
 
 }; // end class LightWeightPass
 

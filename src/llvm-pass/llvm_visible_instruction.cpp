@@ -166,26 +166,6 @@ void dump_base(const visible_instruction<operation_t>& instruction)
 
 } // end namespace
 
-
-//--------------------------------------------------------------------------------------------------
-
-void dump::operator()(const memory_instruction& instruction) const
-{
-   using namespace utils::io;
-   if (instruction.is_atomic())
-   {
-      llvm::errs() << text_color("atomic ", Color::GREEN);
-   }
-   dump_base(instruction);
-}
-
-//--------------------------------------------------------------------------------------------------
-
-void dump::operator()(const lock_instruction& instruction) const
-{
-   dump_base(instruction);
-}
-
 //--------------------------------------------------------------------------------------------------
 
 
