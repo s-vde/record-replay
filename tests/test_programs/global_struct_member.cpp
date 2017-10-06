@@ -10,6 +10,7 @@ struct a_struct
 void function_modifying_global_struct(const int value)
 {
    global_struct.member = value;
+   pthread_exit(0);
 }
 
 int main()

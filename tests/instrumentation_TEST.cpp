@@ -7,6 +7,7 @@
 
 #include <assert.h>
 
+#include <chrono>
 #include <exception>
 #include <fstream>
 
@@ -22,6 +23,8 @@ struct wrapped_instruction_t
 
 
 namespace detail {
+
+//--------------------------------------------------------------------------------------------------
 
 static const auto test_programs_dir =
    boost::filesystem::path(BOOST_PP_STRINGIZE(TEST_PROGRAMS_DIR));
@@ -43,8 +46,11 @@ inline bool is_instrumented(const boost::filesystem::path& test_program,
          return previous == "  " + wrapped_instruction.wrapper_pre;
       }
    }
-   throw std::runtime_error("EXCEPTION: Instruction " + wrapped_instruction.instruction + " not found");
+   throw std::runtime_error("EXCEPTION: Instruction " + wrapped_instruction.instruction +
+                            " not found");
 }
+
+//--------------------------------------------------------------------------------------------------
 
 } // end namespace detail
 
@@ -62,6 +68,18 @@ inline void instrumentation_test(const boost::filesystem::path& test_program,
                     assert(detail::is_instrumented(test_program, wrapped_instruction));
                  });
 }
+
+//--------------------------------------------------------------------------------------------------
+
+inline void instrumented_program_runs_through(const boost::filesystem::path& test_program)
+{
+   scheduler::instrument((detail::test_programs_dir / test_program).string(),
+                         detail::output_dir.string(), "-std=c++14");
+   
+   scheduler::run_under_schedule((detail::output_dir / test_program.stem()).string(), {});   
+}
+
+//--------------------------------------------------------------------------------------------------
 
 } // end namespace test
 } // end namespace record_replay

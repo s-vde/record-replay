@@ -15,6 +15,7 @@ void modify_static_variable(int value)
 {
    static int static_variable = 0;
    static_variable = value;
+   pthread_exit(0);
 }
 
 int main()
