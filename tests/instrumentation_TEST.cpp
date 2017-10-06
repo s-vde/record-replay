@@ -56,10 +56,11 @@ inline bool is_instrumented(const boost::filesystem::path& test_program,
 
 
 inline void instrumentation_test(const boost::filesystem::path& test_program,
+                                 const std::string& compiler_options,
                                  std::vector<wrapped_instruction_t> expected_wrapped_instructions)
 {
    scheduler::instrument((detail::test_programs_dir / test_program).string(),
-                         detail::output_dir.string(), "-std=c++14");
+                         detail::output_dir.string(), compiler_options);
 
    std::for_each(expected_wrapped_instructions.begin(), expected_wrapped_instructions.end(),
                  [&test_program](auto& wrapped_instruction) {
@@ -71,12 +72,13 @@ inline void instrumentation_test(const boost::filesystem::path& test_program,
 
 //--------------------------------------------------------------------------------------------------
 
-inline void instrumented_program_runs_through(const boost::filesystem::path& test_program)
+inline void instrumented_program_runs_through(const boost::filesystem::path& test_program,
+                                              const std::string& compiler_options)
 {
    scheduler::instrument((detail::test_programs_dir / test_program).string(),
-                         detail::output_dir.string(), "-std=c++14");
-   
-   scheduler::run_under_schedule((detail::output_dir / test_program.stem()).string(), {});   
+                         detail::output_dir.string(), compiler_options);
+
+   scheduler::run_under_schedule((detail::output_dir / test_program.stem()).string(), {});
 }
 
 //--------------------------------------------------------------------------------------------------
