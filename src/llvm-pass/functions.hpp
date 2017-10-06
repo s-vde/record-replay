@@ -32,7 +32,6 @@ public:
 
    void initialize(llvm::Module& module);
 
-   llvm::Function* Wrapper_finish() const;
    llvm::Function* Wrapper_post_lock_instruction() const;
    llvm::Function* Wrapper_post_memory_instruction() const;
    llvm::Function* Wrapper_post_spawn_instruction() const;
@@ -40,9 +39,11 @@ public:
    llvm::Function* Wrapper_post_stdthread_join_instruction() const;
    llvm::Function* Wrapper_register_main_thread() const;
    llvm::Function* Wrapper_register_thread() const;
+   llvm::Function* Wrapper_enter_function() const;
+   llvm::Function* Wrapper_exit_function() const;
 
    llvm::Function* Function_pthread_create() const;
-   
+
    llvm::Type* Type_pthread_t() const;
    llvm::Type* Type_stdthread() const;
 

@@ -70,16 +70,15 @@ void wrap::operator()(const thread_management_instruction& instruction)
          llvm::Function* wrapper;
          if (instruction.operand()->getType() == m_functions.Type_pthread_t())
          {
-             wrapper = m_functions.Wrapper_post_pthread_join_instruction();
-             
-         } 
+            wrapper = m_functions.Wrapper_post_pthread_join_instruction();
+         }
          else if (instruction.operand()->getType() == m_functions.Type_stdthread()->getPointerTo())
          {
-             wrapper = m_functions.Wrapper_post_stdthread_join_instruction();
+            wrapper = m_functions.Wrapper_post_stdthread_join_instruction();
          }
          else
          {
-             throw std::invalid_argument("join instruction has invalid operand type");
+            throw std::invalid_argument("join instruction has invalid operand type");
          }
          llvm::CallInst::Create(wrapper, arguments, "", &*m_instruction_it);
          break;
@@ -283,7 +282,8 @@ auto creator::handle_call_and_invoke_instr(
          return create<thread_management_instruction>(instr, thread_management_operation::Spawn,
                                                       *arg_operands.begin());
       }
-      else if (callee->getName() == "\01_pthread_join" || callee->getName() == "_ZNSt3__16thread4joinEv")
+      else if (callee->getName() == "\01_pthread_join" ||
+               callee->getName() == "_ZNSt3__16thread4joinEv")
       {
          return create<thread_management_instruction>(instr, thread_management_operation::Join,
                                                       *arg_operands.begin());
@@ -298,6 +298,8 @@ auto creator::handle_call_and_invoke_instr(
       }
    }
    /// @todo Case of indirect function invokation
+   /// @todo Include pthread_exit as visible instruction?
+
    return return_type();
 }
 

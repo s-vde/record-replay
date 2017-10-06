@@ -66,7 +66,6 @@ void master_thread(work_stealing_queue& queue)
    {
       queue.push(i);
    }
-   pthread_exit(0);
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -77,7 +76,6 @@ void worker_thread(work_stealing_queue& queue)
    {
       int job = queue.steal();
    }
-   pthread_exit(0);
 }
 
 //--------------------------------------------------------------------------------------------------

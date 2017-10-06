@@ -151,12 +151,25 @@ void Scheduler::post_lock_instruction(const int op, const Object& obj, const std
 
 //--------------------------------------------------------------------------------------------------
 
-void Scheduler::finish()
+void Scheduler::enter_function(const std::string& function_name)
 {
+   DEBUGF_SYNC(thread_str(pthread_self()), "enter_function", function_name, "\n");
+   
+   const auto tid = wait_until_registered();
+   get_controllable_thread(tid).enter_function(function_name);
+}
+
+//--------------------------------------------------------------------------------------------------
+
+void Scheduler::exit_function(const std::string& function_name)
+{
+   const auto tid = wait_until_registered();
    try
    {
-      const Thread::tid_t tid = find_tid(pthread_self());
-
+      get_controllable_thread(tid).exit_function(function_name);
+   }
+   catch (const controllable_thread::finished&)
+   {
       if (runs_controlled())
       {
          mPool.yield(tid);
@@ -170,11 +183,6 @@ void Scheduler::finish()
       {
          join();
       }
-   }
-   catch (const unregistered_thread&)
-   {
-      DEBUGF_SYNC("[unregistered_thread]", "finish", "", "\n");
-      return;
    }
 }
 
@@ -530,16 +538,18 @@ int wrapper_post_spawn_instruction(pthread_t* pid, const char* file_name, unsign
 
 //--------------------------------------------------------------------------------------------------
 
-void wrapper_post_pthread_join_instruction(pthread_t pid, const char* file_name, unsigned int line_number)
+void wrapper_post_pthread_join_instruction(pthread_t pid, const char* file_name,
+                                           unsigned int line_number)
 {
    return the_scheduler.post_join_instruction(pid, file_name, line_number);
 }
 
 //--------------------------------------------------------------------------------------------------
 
-void wrapper_post_stdthread_join_instruction(std::thread* thr, const char* file_name, unsigned int line_number)
+void wrapper_post_stdthread_join_instruction(std::thread* thr, const char* file_name,
+                                             unsigned int line_number)
 {
-    return the_scheduler.post_join_instruction(thr->native_handle(), file_name, line_number);
+   return the_scheduler.post_join_instruction(thr->native_handle(), file_name, line_number);
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -562,9 +572,16 @@ void wrapper_post_lock_instruction(int operation, void* operand, const char* fil
 
 //--------------------------------------------------------------------------------------------------
 
-void wrapper_finish()
+void wrapper_enter_function(const char* function_name)
 {
-   the_scheduler.finish();
+   the_scheduler.enter_function(function_name);
+}
+
+//--------------------------------------------------------------------------------------------------
+
+void wrapper_exit_function(const char* function_name)
+{
+   the_scheduler.exit_function(function_name);
 }
 
 //--------------------------------------------------------------------------------------------------

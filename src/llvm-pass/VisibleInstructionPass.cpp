@@ -48,6 +48,7 @@ bool VisibleInstructionPass::runOnFunction(llvm::Module& module, llvm::Function&
 
    if (!isBlackListed(function))
    {
+      instrumentFunction(module, function);
       llvm_visible_instruction::creator creator;
       for (auto inst_it = inst_begin(function); inst_it != inst_end(function); ++inst_it)
       {
@@ -56,15 +57,6 @@ bool VisibleInstructionPass::runOnFunction(llvm::Module& module, llvm::Function&
          {
             runOnVisibleInstruction(module, function, inst_it, *visible_instruction);
             ++m_nr_visible_instructions;
-         }
-         /// @todo Include pthread_exit as visible instruction
-         else if (llvm::CallInst* call_instruction = llvm::dyn_cast<llvm::CallInst>(&instruction))
-         {
-            llvm::Function* callee = call_instruction->getCalledFunction();
-            if (callee && callee->getName() == "pthread_exit")
-            {
-               runOnThreadExit(function, inst_it);
-            }
          }
       }
    }

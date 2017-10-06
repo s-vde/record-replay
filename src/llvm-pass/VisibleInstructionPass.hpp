@@ -16,7 +16,7 @@ namespace llvm {
 class Instruction;
 class Function;
 class Module;
-}   // end namespace llvm
+} // end namespace llvm
 
 
 namespace concurrency_passes {
@@ -27,10 +27,10 @@ public:
    VisibleInstructionPass(char& ID);
 
    virtual void onStartOfPass(llvm::Module& module) = 0;
+   virtual void instrumentFunction(llvm::Module& module, llvm::Function& function) = 0;
    virtual void runOnVisibleInstruction(llvm::Module& module, llvm::Function& function,
                                         llvm::inst_iterator inst_it,
                                         const visible_instruction_t& visible_instruction) = 0;
-   virtual void runOnThreadExit(llvm::Function& function, llvm::inst_iterator inst_it) = 0;
    virtual void onEndOfPass(llvm::Module& module) = 0;
 
 protected:
@@ -45,6 +45,6 @@ private:
    /// @brief The number of visible instructions encountered during the pass.
    unsigned int m_nr_visible_instructions;
 
-};   // end class VisibleInstructionPass
+}; // end class VisibleInstructionPass
 
-}   // end namespace concurrency_passes
+} // end namespace concurrency_passes

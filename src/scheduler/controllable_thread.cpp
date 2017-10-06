@@ -22,9 +22,31 @@ controllable_thread::controllable_thread(const program_model::Thread::tid_t tid,
 
 void controllable_thread::post_task()
 {
-   DEBUGF_SYNC("[thread" << m_tid << "]", "wait_for_turn", "", "\n");
+   DEBUGF_SYNC("[thread" << m_tid << "]", "wait_for_turn", "", std::endl);
    m_control_handle.wait();
-   DEBUGF_SYNC("[thread" << m_tid << "]", "take_turn", "", "\n");
+   DEBUGF_SYNC("[thread" << m_tid << "]", "take_turn", "", std::endl);
+}
+
+//--------------------------------------------------------------------------------------------------
+
+void controllable_thread::enter_function(const std::string& function_name)
+{
+   DEBUGF_SYNC("[thread" << m_tid << "]", "enter_function", function_name, "\n");
+   m_call_stack.push(function_name);
+}
+
+//--------------------------------------------------------------------------------------------------
+
+void controllable_thread::exit_function(const std::string& function_name)
+{
+   DEBUGF_SYNC("[thread" << m_tid << "]", "exit_function", function_name, "\n");
+   if (m_call_stack.empty() || m_call_stack.top() != function_name)
+      throw std::invalid_argument("invalid call stack");
+
+   m_call_stack.pop();
+
+   if (m_call_stack.empty())
+      throw finished();
 }
 
 //--------------------------------------------------------------------------------------------------

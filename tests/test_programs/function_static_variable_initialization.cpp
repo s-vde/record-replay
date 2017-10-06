@@ -14,7 +14,6 @@
 void initialize_static_variable(int value)
 {
    static int static_variable = value;
-   pthread_exit(0);
 }
 
 int main()

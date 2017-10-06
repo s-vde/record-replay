@@ -64,10 +64,9 @@ public:
    void post_lock_instruction(const int op, const Object& obj, const std::string& file_name,
                               unsigned int line_number);
 
-   /// @brief If the program runs Scheduler-controlled, this function updates the
-   /// status of the calling thread in mPool.
+   void enter_function(const std::string& function_name);
 
-   void finish();
+   void exit_function(const std::string& function_name);
 
    /// @brief Lets the main thread of the input program join the Scheduler thread.
 
@@ -197,9 +196,11 @@ void wrapper_register_thread(const pthread_t* const pid, int tid);
 
 int wrapper_post_spawn_instruction(pthread_t*, const char* file_name, unsigned int line_number);
 
-void wrapper_post_pthread_join_instruction(pthread_t, const char* file_name, unsigned int line_number);
+void wrapper_post_pthread_join_instruction(pthread_t, const char* file_name,
+                                           unsigned int line_number);
 
-void wrapper_post_stdthread_join_instruction(std::thread*, const char* file_name, unsigned int line_number);
+void wrapper_post_stdthread_join_instruction(std::thread*, const char* file_name,
+                                             unsigned int line_number);
 
 void wrapper_post_memory_instruction(int operation, void* operand, bool is_atomic,
                                      const char* file_name, unsigned int line_number);
@@ -207,6 +208,8 @@ void wrapper_post_memory_instruction(int operation, void* operand, bool is_atomi
 void wrapper_post_lock_instruction(int operation, void* operand, const char* file_name,
                                    unsigned int line_number);
 
-void wrapper_finish();
+void wrapper_enter_function(const char* function_name);
+
+void wrapper_exit_function(const char* function_name);
 
 } // end extern "C"

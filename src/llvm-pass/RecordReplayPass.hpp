@@ -23,7 +23,6 @@ namespace concurrency_passes {
 class LightWeightPass : public VisibleInstructionPass
 {
 public:
-
    static char ID;
 
    /// @brief Default constructor.
@@ -31,14 +30,13 @@ public:
    LightWeightPass();
 
    void onStartOfPass(llvm::Module& module) override;
+   void instrumentFunction(llvm::Module& module, llvm::Function& function) override;
    void runOnVisibleInstruction(llvm::Module& module, llvm::Function& function,
                                 llvm::inst_iterator inst_it,
                                 const visible_instruction_t& visible_instruction) override;
-   void runOnThreadExit(llvm::Function& function, llvm::inst_iterator inst_it) override;
    void onEndOfPass(llvm::Module& module) override;
 
 private:
-
    bool isBlackListed(const llvm::Function& function) const override;
 
    Functions mFunctions;
