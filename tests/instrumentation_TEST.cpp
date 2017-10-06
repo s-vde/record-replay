@@ -6,6 +6,7 @@
 #include <boost/preprocessor/stringize.hpp>
 
 #include <assert.h>
+#include <sys/stat.h>
 
 #include <chrono>
 #include <exception>
