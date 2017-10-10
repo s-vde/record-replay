@@ -127,14 +127,14 @@ auto object_state::end(std::size_t index) const -> waitset_t::const_iterator
 
 std::string object_state::str() const
 {
-   return to_pretty_string(m_object);
+   return utils::io::to_string(m_object);
 }
 
 //--------------------------------------------------------------------------------------------------
 
 std::ostream& operator<<(std::ostream& os, const object_state& object)
 {
-   os << "object(object=" << to_pretty_string(object.m_object) << " waiting[0]={";
+   os << "object(object=" << utils::io::to_string(object.m_object) << " waiting[0]={";
    for (const auto& it : object.m_waiting[0])
    {
       os << utils::io::to_string(it.second) << " ";

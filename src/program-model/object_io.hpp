@@ -11,10 +11,9 @@
 /// @date 2015-2017
 //--------------------------------------------------------------------------------------------------
 
+
 namespace program_model {
 
-std::string to_string(const Object&);
-std::string to_pretty_string(const Object&);
 std::ostream& operator<<(std::ostream&, const Object&);
 std::istream& operator>>(std::istream&, Object&);
 

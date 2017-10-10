@@ -30,8 +30,6 @@ public:
 private:
    ptr_t m_address;
 
-
-   friend std::string to_pretty_string(const Object&);
    friend std::ostream& operator<<(std::ostream& os, const Object& obj);
    friend std::istream& operator>>(std::istream&, Object&);
 

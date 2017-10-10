@@ -32,8 +32,8 @@ std::ostream& operator<<(
    std::ostream& os, const detail::memory_instruction<thread_id_t, memory_location_t>& instruction)
 {
    os << "memory_instruction " << (instruction.is_atomic() ? "atomic " : "non-atomic ")
-      << instruction.tid() << " " << instruction.operation() << " "
-      << to_string(instruction.operand()) << " " << instruction.meta_data();
+      << instruction.tid() << " " << instruction.operation() << " " << instruction.operand() << " "
+      << instruction.meta_data();
    return os;
 }
 
@@ -48,7 +48,7 @@ std::ostream& operator<<(
    std::ostream& os, const detail::lock_instruction<thread_id_t, memory_location_t>& instruction)
 {
    os << "lock_instruction " << instruction.tid() << " " << instruction.operation() << " "
-      << to_string(instruction.operand()) << " " << instruction.meta_data();
+      << instruction.operand() << " " << instruction.meta_data();
    return os;
 }
 
@@ -120,7 +120,7 @@ std::istream& operator>>(
 
 
 namespace detail {
-   
+
 template <typename thread_id_t, typename memory_location_t, typename thread_t>
 struct instruction_to_short_string : public boost::static_visitor<std::string>
 {
