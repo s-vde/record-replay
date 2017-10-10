@@ -5,6 +5,7 @@
 #include "visible_instruction.hpp"
 
 #include <iostream>
+#include <sstream>
 
 //--------------------------------------------------------------------------------------------------
 /// @file visible_instruction_io.hpp
@@ -46,8 +47,8 @@ template <typename thread_id_t, typename memory_location_t>
 std::ostream& operator<<(
    std::ostream& os, const detail::lock_instruction<thread_id_t, memory_location_t>& instruction)
 {
-   os << "lock_instruction " << instruction.tid() << " " << instruction.operation()
-      << " " << to_string(instruction.operand()) << " " << instruction.meta_data();
+   os << "lock_instruction " << instruction.tid() << " " << instruction.operation() << " "
+      << to_string(instruction.operand()) << " " << instruction.meta_data();
    return os;
 }
 
@@ -62,9 +63,8 @@ std::ostream& operator<<(
    std::ostream& os,
    const detail::thread_management_instruction<thread_id_t, thread_t>& instruction)
 {
-   os << "thread_management_instruction " << instruction.tid() << " "
-      << instruction.operation() << " " << instruction.operand() << " "
-      << instruction.meta_data();
+   os << "thread_management_instruction " << instruction.tid() << " " << instruction.operation()
+      << " " << instruction.operand() << " " << instruction.meta_data();
    return os;
 }
 
@@ -115,6 +115,29 @@ std::istream& operator>>(
    }
    return is;
 }
+
+//--------------------------------------------------------------------------------------------------
+
+
+namespace detail {
+   
+template <typename thread_id_t, typename memory_location_t, typename thread_t>
+struct instruction_to_short_string : public boost::static_visitor<std::string>
+{
+   template <typename operation_t, typename operand_t>
+   std::string operator()(
+      const detail::visible_instruction<thread_id_t, operation_t, operand_t>& instruction) const
+   {
+      std::stringstream stream;
+      stream << instruction.tid() << " " << instruction.operation() << " " << instruction.operand();
+      return stream.str();
+   }
+}; // end struct instruction_to_short_string
+
+} // end namespace detail
+
+using instruction_to_short_string =
+   detail::instruction_to_short_string<Thread::tid_t, Object, Thread>;
 
 //--------------------------------------------------------------------------------------------------
 

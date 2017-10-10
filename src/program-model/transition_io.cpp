@@ -5,8 +5,6 @@
 #include "transition.hpp"
 #include "visible_instruction_io.hpp"
 
-#include <utils_io.hpp>
-
 
 namespace program_model {
 
@@ -14,30 +12,27 @@ namespace program_model {
 
 std::string to_string_pre(const Transition& trans)
 {
-   std::string str = utils::io::to_string(trans.pre());
-   str += "\n";
-   str += to_short_string(trans);
-   return str;
+   std::stringstream stream;
+   stream << trans.pre() << "\n" << trans.index() << " " << trans.instr();
+   return stream.str();
 }
 
 //--------------------------------------------------------------------------------------------------
 
 std::string to_string_post(const Transition& trans)
 {
-   std::string str = to_short_string(trans);
-   str += "\n";
-   str += utils::io::to_string(trans.post());
-   return str;
+   std::stringstream stream;
+   stream << trans.index() << " " << trans.instr() << "\n" << trans.post();
+   return stream.str();
 }
 
 //--------------------------------------------------------------------------------------------------
 
 std::string to_string_pre_post(const Transition& trans)
 {
-   std::string str = to_string_pre(trans);
-   str += "\n";
-   str += utils::io::to_string(trans.post());
-   return str;
+   std::stringstream stream;
+   stream << to_string_pre(trans) << "\n" << trans.post();
+   return stream.str();
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -45,7 +40,8 @@ std::string to_string_pre_post(const Transition& trans)
 std::string to_short_string(const Transition& trans)
 {
    std::stringstream stream;
-   stream << trans.index() << " " << trans.instr();
+   stream << trans.index() << " "
+          << boost::apply_visitor(instruction_to_short_string(), trans.instr());
    return stream.str();
 }
 
