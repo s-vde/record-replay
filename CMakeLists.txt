@@ -9,13 +9,18 @@ set(CMAKE_CXX_STANDARD 14)
 ####################
 # DEPENDENCIES
 
+find_package(Boost COMPONENTS filesystem system)
+if(Boost_FOUND)
+  include_directories(${Boost_INCLUDE_DIRS})
+endif()
+
 set(LLVM_DIR    ${LLVM_BUILD_DIR}/lib/cmake/llvm)
 
 if(NOT DEFINED CPP_UTILS)
 	set(CPP_UTILS   ${CMAKE_CURRENT_SOURCE_DIR}/libs/cpp-utils)
 endif(NOT DEFINED CPP_UTILS)
 message(STATUS "Using CPP_UTILS ${CPP_UTILS}")
-	
+
 
 ####################
 # SUBDIRECTORIES

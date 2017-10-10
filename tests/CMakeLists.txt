@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 3.5)
 project(record_replay_scheduler_test)
 
 set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_EXE_LINKER_FLAGS "-lboost_system -lboost_filesystem")
 
 
 ####################
@@ -45,4 +44,4 @@ target_compile_definitions(RecordReplayTest PRIVATE "TEST_PROGRAMS_DIR=${CMAKE_C
 ####################
 # LINKING
 
-target_link_libraries(RecordReplayTest RecordReplayProgramModel)
+target_link_libraries(RecordReplayTest RecordReplayProgramModel ${Boost_LIBRARIES})
