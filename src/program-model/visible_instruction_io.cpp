@@ -1,7 +1,5 @@
 
-#include "visible_instruction.hpp"
-
-#include <iostream>
+#include "visible_instruction_io.hpp"
 
 
 namespace program_model {
@@ -25,17 +23,21 @@ std::istream& operator>>(std::istream& is, meta_data_t& meta_data)
 //--------------------------------------------------------------------------------------------------
 
 
-std::string to_string(const memory_operation& operation)
+std::ostream& operator<<(std::ostream& os, const memory_operation& operation)
 {
    switch (operation)
    {
       case memory_operation::Load:
-         return "Load";
+         os << "Load";
+         break;
       case memory_operation::Store:
-         return "Store";
+         os << "Store";
+         break;
       case memory_operation::ReadModifyWrite:
-         return "RMW";
+         os << "RMW";
+         break;
    }
+   return os;
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -58,15 +60,18 @@ std::istream& operator>>(std::istream& is, memory_operation& operation)
 //--------------------------------------------------------------------------------------------------
 
 
-std::string to_string(const lock_operation& operation)
+std::ostream& operator<<(std::ostream& os, const lock_operation& operation)
 {
    switch (operation)
    {
       case lock_operation::Lock:
-         return "Lock";
+         os << "Lock";
+         break;
       case lock_operation::Unlock:
-         return "Unlock";
+         os << "Unlock";
+         break;
    }
+   return os;
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -87,15 +92,18 @@ std::istream& operator>>(std::istream& is, lock_operation& operation)
 //--------------------------------------------------------------------------------------------------
 
 
-std::string to_string(const thread_management_operation& operation)
+std::ostream& operator<<(std::ostream& os, const thread_management_operation& operation)
 {
    switch (operation)
    {
       case thread_management_operation::Spawn:
-         return "Spawn";
+         os << "Spawn";
+         break;
       case thread_management_operation::Join:
-         return "Join";
+         os << "Join";
+         break;
    }
+   return os;
 }
 
 //--------------------------------------------------------------------------------------------------

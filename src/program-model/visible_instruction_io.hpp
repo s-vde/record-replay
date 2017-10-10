@@ -23,8 +23,7 @@ std::istream& operator>>(std::istream& is, meta_data_t& meta_data);
 //--------------------------------------------------------------------------------------------------
 
 
-std::string to_string(const memory_operation& operation);
-
+std::ostream& operator<<(std::ostream& os, const memory_operation& operation);
 std::istream& operator>>(std::istream& is, memory_operation& operation);
 
 template <typename thread_id_t, typename memory_location_t>
@@ -32,7 +31,7 @@ std::ostream& operator<<(
    std::ostream& os, const detail::memory_instruction<thread_id_t, memory_location_t>& instruction)
 {
    os << "memory_instruction " << (instruction.is_atomic() ? "atomic " : "non-atomic ")
-      << instruction.tid() << " " << to_string(instruction.operation()) << " "
+      << instruction.tid() << " " << instruction.operation() << " "
       << to_string(instruction.operand()) << " " << instruction.meta_data();
    return os;
 }
@@ -40,15 +39,14 @@ std::ostream& operator<<(
 //--------------------------------------------------------------------------------------------------
 
 
-std::string to_string(const lock_operation& operation);
-
+std::ostream& operator<<(std::ostream& os, const lock_operation& operation);
 std::istream& operator>>(std::istream& is, lock_operation& operation);
 
 template <typename thread_id_t, typename memory_location_t>
 std::ostream& operator<<(
    std::ostream& os, const detail::lock_instruction<thread_id_t, memory_location_t>& instruction)
 {
-   os << "lock_instruction " << instruction.tid() << " " << to_string(instruction.operation())
+   os << "lock_instruction " << instruction.tid() << " " << instruction.operation()
       << " " << to_string(instruction.operand()) << " " << instruction.meta_data();
    return os;
 }
@@ -56,8 +54,7 @@ std::ostream& operator<<(
 //--------------------------------------------------------------------------------------------------
 
 
-std::string to_string(const thread_management_operation& operation);
-
+std::ostream& operator<<(std::ostream& os, const thread_management_operation& operation);
 std::istream& operator>>(std::istream& is, thread_management_operation& operation);
 
 template <typename thread_id_t, typename thread_t>
@@ -66,7 +63,7 @@ std::ostream& operator<<(
    const detail::thread_management_instruction<thread_id_t, thread_t>& instruction)
 {
    os << "thread_management_instruction " << instruction.tid() << " "
-      << to_string(instruction.operation()) << " " << instruction.operand() << " "
+      << instruction.operation() << " " << instruction.operand() << " "
       << instruction.meta_data();
    return os;
 }
