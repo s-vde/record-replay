@@ -13,7 +13,9 @@
 #include <array>
 #include <thread>
 
-#define NR_THREADS 2
+#ifndef NR_THREADS
+   #define NR_THREADS 2
+#endif
 
 //--------------------------------------------------------------------------------------------------
 

@@ -9,7 +9,9 @@
 #include <atomic>
 #include <thread>
 
-#define SIZE 1
+#ifndef SIZE
+   #define SIZE 1
+#endif
 
 //--------------------------------------------------------------------------------------------------
 

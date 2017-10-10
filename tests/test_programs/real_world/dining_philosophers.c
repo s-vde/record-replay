@@ -12,7 +12,9 @@
 
 #include <pthread.h>
 
-#define NUM_THR 2
+#ifndef NR_THREADS
+   #define NR_THREADS 2
+#endif
 
 //--------------------------------------------------------------------------------------------------
 
