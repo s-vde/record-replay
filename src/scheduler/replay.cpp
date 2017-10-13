@@ -35,13 +35,14 @@ void run_under_schedule(const program_t& program, const schedule_t& schedule,
 
 #if defined(LLVM_BIN) && defined(RECORD_REPLAY_BUILD_DIR)
 void instrument(const program_t& program, const std::string& output_dir,
-                const std::string& compiler_options)
+                const std::string& optimization_level, const std::string& compiler_options)
 {
    const static std::string llvm_bin = BOOST_PP_STRINGIZE(LLVM_BIN);
    const static std::string record_replay_build_dir = BOOST_PP_STRINGIZE(RECORD_REPLAY_BUILD_DIR);
    const static std::string instrument_script = record_replay_build_dir + "/instrument.sh";
    const std::string command = instrument_script + " " + record_replay_build_dir + " " + llvm_bin +
-                               " " + program + " " + output_dir + " " + compiler_options;
+                               " " + program + " " + output_dir + " " + optimization_level + " " +
+                               compiler_options;
    system(command.c_str());
 }
 #endif

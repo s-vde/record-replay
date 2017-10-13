@@ -32,6 +32,7 @@ void run_under_schedule(const program_t&, const schedule_t&, const SchedulerSett
 
 #if defined(LLVM_BIN) && defined(RECORD_REPLAY_BUILD_DIR)
 void instrument(const program_t&, const std::string& output_dir,
+                const std::string& optimization_level = "0",
                 const std::string& compiler_options = "");
 #endif
 

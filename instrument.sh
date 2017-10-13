@@ -7,7 +7,8 @@ record_replay_build=`echo $1`
 llvm_bin=`echo $2`
 input_program=`echo $3`
 output_dir=`echo $4`
-compiler_options=`echo $5`
+optimization_level=`echo $5`
+compiler_options=`echo $6`
 
 
 ####################
@@ -20,7 +21,7 @@ scheduler_build=${record_replay_build}/src/scheduler
 input_filename=$(basename "${input_program}")
 input_extension="${input_filename##*.}"
 
-compiler_options+=" -O0 -g -pthread -emit-llvm "
+compiler_options+=" -O${optimization_level} -g -pthread -emit-llvm"
 
 if [ ${input_extension} == "c" ]; then
    compiler=${llvm_bin}/clang
