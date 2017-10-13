@@ -18,15 +18,15 @@
 
 //--------------------------------------------------------------------------------------------------
 
-/// @brief Array holding the status of the [NUM_THR] forks, where (1) means available and (0) means
+/// @brief Array holding the status of the [NR_THREADS] forks, where (1) means available and (0) means
 /// taken
-int fork[NUM_THR];
+int fork[NR_THREADS];
 
 /// @brief Array of mutex locks for each fork
-pthread_mutex_t lock[NUM_THR];
+pthread_mutex_t lock[NR_THREADS];
 
 /// @brief Array holding number of meals consumed by each philosopher
-int meals[NUM_THR];
+int meals[NR_THREADS];
 
 //--------------------------------------------------------------------------------------------------
 
@@ -58,25 +58,22 @@ void* philosopher(void* arg)
 {
    int id = *(int*)arg;
    int left = id;
-   int right = (id + 1) % NUM_THR;
+   int right = (id + 1) % NR_THREADS;
 
-   int first = left;
-   int second = right;
-
-   // first fork is available
-   if (take_up(id, first) == 1)
+   // left fork is available
+   if (take_up(id, left) == 1)
    {
-      // second fork is also available
-      if (take_up(id, second) == 1)
+      // right fork is also available
+      if (take_up(id, right) == 1)
       {
          meals[id]++;
-         put_down(id, first);
-         put_down(id, second);
+         put_down(id, left);
+         put_down(id, right);
       }
-      // second fork is not available
+      // left fork is not available
       else
       {
-         put_down(id, first);
+         put_down(id, left);
       }
    }
    
@@ -87,22 +84,22 @@ void* philosopher(void* arg)
 
 int main()
 {
-   pthread_t phils[NUM_THR];
-   int pid[NUM_THR];
+   pthread_t phils[NR_THREADS];
+   int pid[NR_THREADS];
    void* status;
 
-   for (int i = 0; i < NUM_THR; ++i)
+   for (int i = 0; i < NR_THREADS; ++i)
    {
       pid[i] = i;
       fork[i] = 1;
       meals[i] = 0;
       pthread_mutex_init(lock + i, NULL);
    }
-   for (int i = 0; i < NUM_THR; ++i)
+   for (int i = 0; i < NR_THREADS; ++i)
    {
       pthread_create(phils + i, 0, philosopher, pid + i);
    }
-   for (int i = 0; i < NUM_THR; ++i)
+   for (int i = 0; i < NR_THREADS; ++i)
    {
       pthread_join(phils[i], &status);
    }
