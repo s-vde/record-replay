@@ -1,16 +1,15 @@
 
 #include <execution_io.hpp>
 
-#include <fstream>
-#include <thread>
+#include <gtest/gtest.h>
 
-#include <assert.h>
+#include <fstream>
 
 
 namespace program_model {
 namespace test {
 
-inline void execution_roundtrip_test()
+TEST(ExecutionRoundtripTest, ExecutionRoundTrip)
 {
    int var_1 = 0;
    std::atomic<int> var_2;
@@ -93,7 +92,7 @@ inline void execution_roundtrip_test()
       std::ifstream input_file("execution_io_TEST.txt");
       input_file >> execution_read;
    }
-   assert(execution_write == execution_read);
+   ASSERT_TRUE(execution_write == execution_read);
 }
 
 //--------------------------------------------------------------------------------------------------

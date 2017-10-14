@@ -1,88 +1,73 @@
 
 #include <replay.hpp>
 
-#include <boost/algorithm/string.hpp>
-#include <boost/filesystem/path.hpp>
+#include <gtest/gtest.h>
+
+#include <boost/filesystem.hpp>
 #include <boost/preprocessor/stringize.hpp>
 
-#include <assert.h>
-#include <sys/stat.h>
-
 #include <chrono>
-#include <exception>
-#include <fstream>
 
+//--------------------------------------------------------------------------------------------------
 
 namespace record_replay {
 namespace test {
-
-struct wrapped_instruction_t
-{
-   std::string wrapper_pre;
-   std::string instruction;
-}; // end struct wrapper_instruction_t
-
-
 namespace detail {
-
-//--------------------------------------------------------------------------------------------------
 
 static const auto test_programs_dir =
    boost::filesystem::path(BOOST_PP_STRINGIZE(TEST_PROGRAMS_DIR));
 static const auto tests_build_dir = boost::filesystem::path{BOOST_PP_STRINGIZE(TESTS_BUILD_DIR)};
-static const auto output_dir = tests_build_dir / "test_data" / "test_programs_instrumented";
-
-inline bool is_instrumented(const boost::filesystem::path& test_program,
-                            const wrapped_instruction_t& wrapped_instruction)
-{
-   auto ir_dump = output_dir / test_program;
-   ir_dump += ".instrumented.txt";
-
-   std::ifstream ifs{ir_dump.string()};
-   std::string previous, current;
-   while (previous = current, std::getline(ifs, current))
-   {
-      if (current == "  " + wrapped_instruction.instruction)
-      {
-         return previous == "  " + wrapped_instruction.wrapper_pre;
-      }
-   }
-   throw std::runtime_error("EXCEPTION: Instruction " + wrapped_instruction.instruction +
-                            " not found");
-}
-
-//--------------------------------------------------------------------------------------------------
+static const auto test_data_dir = tests_build_dir / "test_data";
 
 } // end namespace detail
 
-
-inline void instrumentation_test(const boost::filesystem::path& test_program,
-                                 const std::string& optimization_level,
-                                 const std::string& compiler_options,
-                                 std::vector<wrapped_instruction_t> expected_wrapped_instructions)
-{
-   scheduler::instrument((detail::test_programs_dir / test_program).string(),
-                         detail::output_dir.string(), optimization_level, compiler_options);
-
-   std::for_each(expected_wrapped_instructions.begin(), expected_wrapped_instructions.end(),
-                 [&test_program](auto& wrapped_instruction) {
-                    boost::replace_first(wrapped_instruction.wrapper_pre, "[test_programs_dir]",
-                                         detail::test_programs_dir.string());
-                    assert(detail::is_instrumented(test_program, wrapped_instruction));
-                 });
-}
-
 //--------------------------------------------------------------------------------------------------
 
-inline void instrumented_program_runs_through(const boost::filesystem::path& test_program,
-                                              const std::string& optimization_level,
-                                              const std::string& compiler_options)
+struct InstrumentedProgramRunTestData
 {
-   scheduler::instrument((detail::test_programs_dir / test_program).string(),
-                         detail::output_dir.string(), optimization_level, compiler_options);
+   boost::filesystem::path test_program;
+   std::string optimization_level;
+   std::string compiler_options;
 
-   scheduler::run_under_schedule((detail::output_dir / test_program.stem()).string(), {});
+}; // end struct InstrumentedProgramRunTestData
+
+struct InstrumentedProgramRunTest : public ::testing::TestWithParam<InstrumentedProgramRunTestData>
+{
+   void SetUp() override
+   {
+      boost::filesystem::create_directories(
+         detail::test_data_dir / GetParam().test_program.filename() /
+         boost::filesystem::path("0" + GetParam().optimization_level) / "records");
+   }
+
+   boost::filesystem::path test_output_dir() const
+   {
+      return detail::test_data_dir / GetParam().test_program.filename() /
+             boost::filesystem::path("0" + GetParam().optimization_level);
+   }
+}; // end struct InstrumentedProgramRunTest
+
+TEST_P(InstrumentedProgramRunTest, InstrumentedProgramRunsThrough)
+{
+   scheduler::instrument((detail::test_programs_dir / GetParam().test_program).string(),
+                         (test_output_dir() / "instrumented").string(),
+                         GetParam().optimization_level, GetParam().compiler_options);
+
+   boost::filesystem::rename("record.txt", test_output_dir() / "records/record.txt");
+   boost::filesystem::rename("record_short.txt", test_output_dir() / "records/record_short.txt");
+
+   ASSERT_NO_THROW(scheduler::run_under_schedule(
+      (test_output_dir() / "instrumented" / GetParam().test_program.stem()).string(), {},
+      std::chrono::milliseconds(3000)));
 }
+
+INSTANTIATE_TEST_CASE_P(
+   RealWorldPrograms, InstrumentedProgramRunTest,
+   ::testing::Values(
+      InstrumentedProgramRunTestData{"real_world/filesystem.c", "0", ""},
+      InstrumentedProgramRunTestData{"real_world/dining_philosophers.c", "0", ""},
+      InstrumentedProgramRunTestData{"real_world/dining_philosophers.cpp", "0", "-std=c++14"},
+      InstrumentedProgramRunTestData{"real_world/work_stealing_queue.cpp", "0", "-std=c++14"}));
 
 //--------------------------------------------------------------------------------------------------
 

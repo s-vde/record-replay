@@ -8,6 +8,8 @@ set(CMAKE_CXX_STANDARD 14)
 ####################
 # DEPENDENCIES
 
+include_directories(${GOOGLE_TEST}/googletest/include)
+
 set(PROGRAM_MODEL   ${CMAKE_CURRENT_SOURCE_DIR}/../src/program-model)
 include_directories(${PROGRAM_MODEL})
 
@@ -27,9 +29,7 @@ add_executable(RecordReplayTest
   ${CPP_UTILS}/src/utils_io.cpp
   ${SCHEDULER}/replay.cpp
   ${SCHEDULER}/scheduler_settings.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/instrumentation_TEST.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/main_TEST.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/program_model/execution_io_TEST.cpp
 )
 
 
@@ -45,4 +45,4 @@ target_compile_definitions(RecordReplayTest PRIVATE "TEST_PROGRAMS_DIR=${CMAKE_C
 ####################
 # LINKING
 
-target_link_libraries(RecordReplayTest RecordReplayProgramModel ${Boost_LIBRARIES})
+target_link_libraries(RecordReplayTest RecordReplayProgramModel gtest ${Boost_LIBRARIES})
