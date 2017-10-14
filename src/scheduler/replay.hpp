@@ -2,6 +2,9 @@
 
 #include "schedule.hpp"
 
+#include <boost/optional.hpp>
+
+#include <chrono>
 #include <string>
 
 //--------------------------------------------------------------------------------------------------
@@ -21,14 +24,17 @@ class SchedulerSettings;
 
 
 using program_t = std::string;
+using timeout_t = std::chrono::milliseconds;
 
 /// @brief Run the program under the settings currently in schedules/settings.txt.
 /// @note If schedules/settings.txt does not exist, the Scheduler may not behave as
 /// expected.
 
-void run_under_schedule(const program_t&, const schedule_t&);
+void run_under_schedule(const program_t&, const schedule_t&,
+                        const boost::optional<timeout_t>& timeout = boost::none);
 
-void run_under_schedule(const program_t&, const schedule_t&, const SchedulerSettings&);
+void run_under_schedule(const program_t&, const schedule_t&, const SchedulerSettings&,
+                        const boost::optional<timeout_t>& timeout = boost::none);
 
 #if defined(LLVM_BIN) && defined(RECORD_REPLAY_BUILD_DIR)
 void instrument(const program_t&, const std::string& output_dir,

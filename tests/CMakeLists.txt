@@ -23,6 +23,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/program_model)
 # LIBRARY
 
 add_executable(RecordReplayTest
+  ${CPP_UTILS}/src/fork.cpp
   ${CPP_UTILS}/src/utils_io.cpp
   ${SCHEDULER}/replay.cpp
   ${SCHEDULER}/scheduler_settings.cpp

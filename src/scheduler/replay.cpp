@@ -4,10 +4,9 @@
 #include "scheduler_settings.hpp"
 
 #include <container_output.hpp>
+#include <fork.hpp>
 
 #include <boost/preprocessor/stringize.hpp>
-
-#include <sys/stat.h>
 
 #include <fstream>
 
@@ -16,19 +15,21 @@ namespace scheduler {
 
 //--------------------------------------------------------------------------------------------------
 
-void run_under_schedule(const program_t& program, const schedule_t& schedule)
+void run_under_schedule(const program_t& program, const schedule_t& schedule,
+                        const boost::optional<timeout_t>& timeout)
 {
    write_schedules(schedule);
-   system(program.c_str());
+   utils::sys::fork_process(program, timeout);
 }
 
 //--------------------------------------------------------------------------------------------------
 
 void run_under_schedule(const program_t& program, const schedule_t& schedule,
-                        const SchedulerSettings& settings)
+                        const SchedulerSettings& settings,
+                        const boost::optional<timeout_t>& timeout)
 {
    write_settings(settings);
-   run_under_schedule(program, schedule);
+   run_under_schedule(program, schedule, timeout);
 }
 
 //--------------------------------------------------------------------------------------------------
