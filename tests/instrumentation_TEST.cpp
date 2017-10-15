@@ -53,12 +53,12 @@ TEST_P(InstrumentedProgramRunTest, InstrumentedProgramRunsThrough)
                          (test_output_dir() / "instrumented").string(),
                          GetParam().optimization_level, GetParam().compiler_options);
 
+   ASSERT_NO_THROW(scheduler::run_under_schedule((test_output_dir() / "instrumented" /
+                                                    GetParam().test_program.stem()).string(),
+                                                 {}, std::chrono::milliseconds(3000)));
+
    boost::filesystem::rename("record.txt", test_output_dir() / "records/record.txt");
    boost::filesystem::rename("record_short.txt", test_output_dir() / "records/record_short.txt");
-
-   ASSERT_NO_THROW(scheduler::run_under_schedule(
-      (test_output_dir() / "instrumented" / GetParam().test_program.stem()).string(), {},
-      std::chrono::milliseconds(3000)));
 }
 
 INSTANTIATE_TEST_CASE_P(
