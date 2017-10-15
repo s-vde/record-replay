@@ -53,4 +53,4 @@ add_library(RecordReplayScheduler SHARED
 ####################
 # LINKING
 
-target_link_libraries(RecordReplayScheduler RecordReplayProgramModel CustomSelectionStrategies)
+target_link_libraries(RecordReplayScheduler RecordReplayProgramModel CustomSelectionStrategies ${Boost_LIBRARIES})

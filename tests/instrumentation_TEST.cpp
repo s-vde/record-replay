@@ -49,12 +49,12 @@ struct InstrumentedProgramRunTest : public ::testing::TestWithParam<Instrumented
 
 TEST_P(InstrumentedProgramRunTest, InstrumentedProgramRunsThrough)
 {
-   scheduler::instrument((detail::test_programs_dir / GetParam().test_program).string(),
-                         (test_output_dir() / "instrumented").string(),
-                         GetParam().optimization_level, GetParam().compiler_options);
+   scheduler::instrument(detail::test_programs_dir / GetParam().test_program,
+                         test_output_dir() / "instrumented", GetParam().optimization_level,
+                         GetParam().compiler_options);
 
-   ASSERT_NO_THROW(scheduler::run_under_schedule((test_output_dir() / "instrumented" /
-                                                    GetParam().test_program.stem()).string(),
+   ASSERT_NO_THROW(scheduler::run_under_schedule(test_output_dir() / "instrumented" /
+                                                    GetParam().test_program.stem(),
                                                  {}, std::chrono::milliseconds(3000)));
 
    boost::filesystem::rename("record.txt", test_output_dir() / "records/record.txt");

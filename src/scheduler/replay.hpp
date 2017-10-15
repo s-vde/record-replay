@@ -2,6 +2,7 @@
 
 #include "schedule.hpp"
 
+#include <boost/filesystem/path.hpp>
 #include <boost/optional.hpp>
 
 #include <chrono>
@@ -23,7 +24,7 @@ class SchedulerSettings;
 //--------------------------------------------------------------------------------------------------
 
 
-using program_t = std::string;
+using program_t = boost::filesystem::path;
 using timeout_t = std::chrono::milliseconds;
 
 /// @brief Run the program under the settings currently in schedules/settings.txt.
@@ -37,7 +38,7 @@ void run_under_schedule(const program_t&, const schedule_t&, const SchedulerSett
                         const boost::optional<timeout_t>& timeout = boost::none);
 
 #if defined(LLVM_BIN) && defined(RECORD_REPLAY_BUILD_DIR)
-void instrument(const program_t&, const std::string& output_dir,
+void instrument(const program_t&, const boost::filesystem::path& output_dir,
                 const std::string& optimization_level = "0",
                 const std::string& compiler_options = "");
 #endif
