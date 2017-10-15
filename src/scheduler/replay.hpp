@@ -32,10 +32,12 @@ using timeout_t = std::chrono::milliseconds;
 /// expected.
 
 void run_under_schedule(const program_t&, const schedule_t&,
-                        const boost::optional<timeout_t>& timeout = boost::none);
+                        const boost::optional<timeout_t>& timeout = boost::none,
+                        const boost::filesystem::path& output_dir = "./record_replay_output");
 
 void run_under_schedule(const program_t&, const schedule_t&, const SchedulerSettings&,
-                        const boost::optional<timeout_t>& timeout = boost::none);
+                        const boost::optional<timeout_t>& timeout = boost::none,
+                        const boost::filesystem::path& output_dir = "./record_replay_output");
 
 #if defined(LLVM_BIN) && defined(RECORD_REPLAY_BUILD_DIR)
 void instrument(const program_t&, const boost::filesystem::path& output_dir,
