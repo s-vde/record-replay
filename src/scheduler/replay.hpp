@@ -40,9 +40,10 @@ void run_under_schedule(const program_t&, const schedule_t&, const SchedulerSett
                         const boost::filesystem::path& output_dir = "./record_replay_output");
 
 #if defined(LLVM_BIN) && defined(RECORD_REPLAY_BUILD_DIR)
-void instrument(const program_t&, const boost::filesystem::path& output_dir,
-                const std::string& optimization_level = "0",
-                const std::string& compiler_options = "");
+boost::filesystem::path instrument(const program_t& program_source,
+                                   const boost::filesystem::path& output_dir,
+                                   const std::string& optimization_level = "0",
+                                   const std::string& compiler_options = "");
 #endif
 
 void write_settings(const SchedulerSettings&);

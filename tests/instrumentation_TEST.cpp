@@ -49,13 +49,12 @@ struct InstrumentedProgramRunTest : public ::testing::TestWithParam<Instrumented
 
 TEST_P(InstrumentedProgramRunTest, InstrumentedProgramRunsThrough)
 {
-   scheduler::instrument(detail::test_programs_dir / GetParam().test_program,
-                         test_output_dir() / "instrumented", GetParam().optimization_level,
-                         GetParam().compiler_options);
+   const auto instrumented_executable = scheduler::instrument(
+      detail::test_programs_dir / GetParam().test_program, test_output_dir() / "instrumented",
+      GetParam().optimization_level, GetParam().compiler_options);
 
    ASSERT_NO_THROW(scheduler::run_under_schedule(
-      test_output_dir() / "instrumented" / GetParam().test_program.stem(), {},
-      std::chrono::milliseconds(3000), test_output_dir() / "records"));
+      instrumented_executable, {}, std::chrono::milliseconds(3000), test_output_dir() / "records"));
 }
 
 INSTANTIATE_TEST_CASE_P(

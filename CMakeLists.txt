@@ -7,6 +7,15 @@ set(CMAKE_CXX_STANDARD 14)
 
 
 ####################
+# VARIABLES
+
+set(LLVM_BIN                    ${LLVM_BUILD_DIR}/bin)
+set(LLVM_BIN                    ${LLVM_BIN}                     PARENT_SCOPE)
+set(RECORD_REPLAY_BUILD_DIR     ${CMAKE_CURRENT_BINARY_DIR})
+set(RECORD_REPLAY_BUILD_DIR     ${RECORD_REPLAY_BUILD_DIR}      PARENT_SCOPE)
+
+
+####################
 # DEPENDENCIES
 
 find_package(Boost COMPONENTS filesystem system)
@@ -31,9 +40,3 @@ add_subdirectory(src/llvm-pass)
 add_subdirectory(src/program-model)
 add_subdirectory(src/scheduler)
 add_subdirectory(tests)
-
-
-####################
-# OTHER
-
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/instrument.sh DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

@@ -31,18 +31,18 @@ cmake -DLLVM_BUILD_DIR=<path_to_llvm_build_dir>
 
 ---
 
-## Instrumenting a Program
-In order to instrument an input program, run
+## Instrumenting a Program using the API
+
+The API for instrumenting a program is provided in ```src/scheduler/replay.hpp``` is as follows:
 
 ```
-./instrument.sh
-     <record_replay_build_dir>
-     <llvm_bin> 
-     <input_program>
-     <output_dir>
-     (compiler_options)
+boost::filesystem::path instrument(const program_t& program_source,
+                                   const boost::filesystem::path& output_dir,
+                                   const std::string& optimization_level = "0",
+                                   const std::string& compiler_options = "");
 ```
-where all path variables can be either relative or absolute to the current directory.
+
+The returned path is the path to the instrumented executable.
 
 ---
 
