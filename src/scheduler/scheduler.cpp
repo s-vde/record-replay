@@ -65,7 +65,6 @@ Scheduler::Scheduler()
 void Scheduler::register_main_thread()
 {
    register_thread(pthread_self(), boost::none);
-   mMainThreadRegistered.store(true);
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -83,6 +82,10 @@ Thread::tid_t Scheduler::register_thread(const pthread_t& pid,
    mControllableThreads.emplace(std::piecewise_construct, std::forward_as_tuple(*tid),
                                 std::forward_as_tuple(*tid, mThread.get_id()));
    mPool.register_thread(*tid);
+   
+   if (tid == 0)
+      mMainThreadRegistered.store(true);
+      
    DEBUGF_SYNC(thread_str(*tid), "register_thread", "pid=" << pid_to_string(pid), "\n");
    mRegCond.notify_all();
    return *tid;
