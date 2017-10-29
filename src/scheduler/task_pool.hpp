@@ -184,4 +184,6 @@ private:
 
 }; // end class TaskPool
 
+std::ostream& operator<<(std::ostream&, TaskPool&);
+
 } // end namespace scheduler

@@ -3,6 +3,7 @@
 
 #include "object_io.hpp"
 #include "thread_io.hpp"
+#include "visible_instruction_io.hpp"
 
 #include "debug.hpp"
 #include "utils_io.hpp"
@@ -333,6 +334,22 @@ bool TaskPool::all_finished() const
    return std::all_of(mThreads.begin(), mThreads.end(), [](const auto& thread) {
       return thread.second.status() != Thread::Status::FINISHED;
    });
+}
+
+//--------------------------------------------------------------------------------------------------
+
+std::ostream& operator<<(std::ostream& os, TaskPool& task_pool)
+{
+   os << "TaskPool {";
+   std::for_each(
+      task_pool.tasks_cbegin(), task_pool.tasks_cend(), [&os, &task_pool](const auto& task) {
+         const auto enabled =
+            task_pool.status_protected(task.first) == program_model::Thread::Status::ENABLED;
+         os << "\n\t[" << task.first << "]\t" << (enabled ? "enabled " : "disabled") << "\t->\t"
+            << boost::apply_visitor(program_model::instruction_to_short_string(), task.second);
+      });
+   os << "\n}";
+   return os;
 }
 
 //--------------------------------------------------------------------------------------------------

@@ -65,7 +65,8 @@ object_state::object_state(const object_t& object)
 bool object_state::request(const instruction_t& instr)
 {
    using namespace program_model;
-   DEBUGF_SYNC("object", "request", instr, "\n");
+   DEBUGF_SYNC("object", "request", boost::apply_visitor(instruction_to_short_string(), instr),
+               "\n");
    const auto op_type = boost::apply_visitor(operation_as_int(), instr) % 2;
    auto& waitset = m_waiting[op_type];
    const auto tid = boost::apply_visitor(program_model::get_tid(), instr);
@@ -137,12 +138,12 @@ std::ostream& operator<<(std::ostream& os, const object_state& object)
    os << "object(object=" << utils::io::to_string(object.m_object) << " waiting[0]={";
    for (const auto& it : object.m_waiting[0])
    {
-      os << utils::io::to_string(it.second) << " ";
+      os << boost::apply_visitor(program_model::instruction_to_short_string(), it.second) << " ";
    }
    os << "} waiting[1]={";
    for (const auto& it : object.m_waiting[1])
    {
-      os << utils::io::to_string(it.second) << " ";
+      os << boost::apply_visitor(program_model::instruction_to_short_string(), it.second) << " ";
    }
    os << "}";
    return os;

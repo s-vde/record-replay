@@ -24,7 +24,8 @@ thread_state::thread_state(thread_t& object)
 
 bool thread_state::request(const instruction_t& instr)
 {
-   DEBUGF_SYNC("thread_state", "request", instr, "\n");
+   DEBUGF_SYNC("thread_state", "request", program_model::instruction_to_short_string()(instr),
+               "\n");
    using namespace program_model;
    if (instr.operation() == thread_management_operation::Join)
    {
@@ -69,7 +70,7 @@ auto thread_state::end() const -> waitset_t::const_iterator
 }
 
 // //--------------------------------------------------------------------------------------------------
-// 
+//
 // std::string thread_state::str() const
 // {
 //    return to_string(m_object);
@@ -82,7 +83,7 @@ std::ostream& operator<<(std::ostream& os, const thread_state& state)
    os << "thread_state(thread=" << state.m_object << " waiting={";
    for (const auto& it : state.m_waiting)
    {
-      os << utils::io::to_string(it.second) << " ";
+      os << program_model::instruction_to_short_string()(it.second) << " ";
    }
    os << "}";
    return os;

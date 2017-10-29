@@ -82,10 +82,10 @@ Thread::tid_t Scheduler::register_thread(const pthread_t& pid,
    mControllableThreads.emplace(std::piecewise_construct, std::forward_as_tuple(*tid),
                                 std::forward_as_tuple(*tid, mThread.get_id()));
    mPool.register_thread(*tid);
-   
+
    if (tid == 0)
       mMainThreadRegistered.store(true);
-      
+
    DEBUGF_SYNC(thread_str(*tid), "register_thread", "pid=" << pid_to_string(pid), "\n");
    mRegCond.notify_all();
    return *tid;
@@ -157,7 +157,7 @@ void Scheduler::post_lock_instruction(const int op, const Object& obj, const std
 void Scheduler::enter_function(const std::string& function_name)
 {
    DEBUGF_SYNC(thread_str(pthread_self()), "enter_function", function_name, "\n");
-   
+
    const auto tid = wait_until_registered();
    get_controllable_thread(tid).enter_function(function_name);
 }
@@ -227,7 +227,9 @@ void Scheduler::post_task(const create_instruction_t& create_instruction)
 
    const auto tid = wait_until_registered();
    auto instruction = create_instruction(tid);
-   DEBUGF_SYNC(thread_str(tid), "post_task", instruction, "\n");
+   DEBUGF_SYNC(thread_str(tid), "post_task",
+               boost::apply_visitor(program_model::instruction_to_short_string(), instruction),
+               "\n");
    if (runs_controlled())
    {
       mPool.yield(tid);
@@ -331,6 +333,7 @@ void Scheduler::run()
 {
    wait_until_main_thread_registered();
    mPool.wait_until_unfinished_threads_have_posted();
+   DEBUG_SYNC(mPool << "\n");
 
    Execution E(mPool.program_state());
 
@@ -359,6 +362,7 @@ void Scheduler::run()
             break;
          }
          mPool.wait_until_unfinished_threads_have_posted();
+         DEBUG_SYNC(mPool << "\n");
       }
       catch (const deadlock_exception& deadlock)
       {
@@ -401,7 +405,10 @@ bool Scheduler::schedule_thread(const Thread::tid_t& tid)
    if (mPool.status_protected(tid) == Thread::Status::ENABLED)
    {
       const program_model::visible_instruction_t task = mPool.set_current(tid);
-      DEBUGF_SYNC("Scheduler", "schedule_thread", tid, "next task = " << task << "\n");
+      DEBUGF_SYNC(
+         "Scheduler", "schedule_thread", tid,
+         "next task = " << boost::apply_visitor(program_model::instruction_to_short_string(), task)
+                        << "\n");
       get_controllable_thread(tid).grant_execution_right();
       mLocVars->increase_task_nr();
       return true;
