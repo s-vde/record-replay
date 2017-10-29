@@ -367,6 +367,7 @@ void Scheduler::run()
       catch (const deadlock_exception& deadlock)
       {
          write_to_stream(std::cout, deadlock.get());
+         E.push_back(mPool.tasks_cbegin()->second, mPool.program_state());
          set_status(Execution::Status::DEADLOCK);
          break;
       }
@@ -450,6 +451,9 @@ void Scheduler::close(Execution& E)
    E.set_status(status());
    dump_execution(E);
    dump_data_races();
+   
+   if (status() == Execution::Status::DEADLOCK)
+      std::terminate();
 }
 
 //--------------------------------------------------------------------------------------------------
