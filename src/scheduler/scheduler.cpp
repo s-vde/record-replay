@@ -80,7 +80,7 @@ Thread::tid_t Scheduler::register_thread(const pthread_t& pid,
    }
    mThreads.insert(TidMap::value_type(pid, *tid));
    mControllableThreads.emplace(std::piecewise_construct, std::forward_as_tuple(*tid),
-                                std::forward_as_tuple(*tid, mThread.get_id()));
+                                std::forward_as_tuple(*tid, pid, mThread.get_id()));
    mPool.register_thread(*tid);
 
    if (tid == 0)
@@ -451,7 +451,7 @@ void Scheduler::close(Execution& E)
    E.set_status(status());
    dump_execution(E);
    dump_data_races();
-   
+
    if (status() == Execution::Status::DEADLOCK)
       std::terminate();
 }

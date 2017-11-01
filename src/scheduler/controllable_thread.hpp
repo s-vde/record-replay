@@ -4,6 +4,7 @@
 
 #include <threads/binary_sem.hpp>
 
+#include <pthread.h>
 #include <stack>
 #include <string>
 
@@ -19,8 +20,8 @@ namespace scheduler {
 class controllable_thread
 {
 public:
-
-   controllable_thread(const program_model::Thread::tid_t tid, const std::thread::id owner_id);
+   controllable_thread(const program_model::Thread::tid_t tid, const pthread_t pid,
+                       const std::thread::id owner_id);
 
    /// @brief Should only be called by the thread to be controlled
    void post_task();
@@ -46,6 +47,9 @@ public:
 private:
    /// @brief The id of this thread
    program_model::Thread::tid_t m_tid;
+
+   /// @brief The pthread id of this thread
+   pthread_t m_pid;
 
    /// @brief The id of the thread that is controlling this thread
    std::thread::id m_owner_id;
