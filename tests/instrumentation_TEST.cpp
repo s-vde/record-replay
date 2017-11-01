@@ -1,10 +1,11 @@
 
+#include "include/test_helpers.hpp"
+
 #include <replay.hpp>
 
 #include <gtest/gtest.h>
 
 #include <boost/filesystem.hpp>
-#include <boost/preprocessor/stringize.hpp>
 
 #include <chrono>
 
@@ -12,26 +13,8 @@
 
 namespace record_replay {
 namespace test {
-namespace detail {
 
-static const auto test_programs_dir =
-   boost::filesystem::path(BOOST_PP_STRINGIZE(TEST_PROGRAMS_DIR));
-static const auto tests_build_dir = boost::filesystem::path{BOOST_PP_STRINGIZE(TESTS_BUILD_DIR)};
-static const auto test_data_dir = tests_build_dir / "test_data";
-
-} // end namespace detail
-
-//--------------------------------------------------------------------------------------------------
-
-struct InstrumentedProgramRunTestData
-{
-   boost::filesystem::path test_program;
-   std::string optimization_level;
-   std::string compiler_options;
-
-}; // end struct InstrumentedProgramRunTestData
-
-struct InstrumentedProgramRunTest : public ::testing::TestWithParam<InstrumentedProgramRunTestData>
+struct InstrumentedProgramRunTest : public ::testing::TestWithParam<InstrumentedProgramTestData>
 {
    void SetUp() override
    {
@@ -60,10 +43,10 @@ TEST_P(InstrumentedProgramRunTest, InstrumentedProgramRunsThrough)
 INSTANTIATE_TEST_CASE_P(
    RealWorldPrograms, InstrumentedProgramRunTest,
    ::testing::Values(
-      InstrumentedProgramRunTestData{"real_world/filesystem.c", "0", ""},
-      InstrumentedProgramRunTestData{"real_world/dining_philosophers.c", "0", ""},
-      InstrumentedProgramRunTestData{"real_world/dining_philosophers.cpp", "0", "-std=c++14"},
-      InstrumentedProgramRunTestData{"real_world/work_stealing_queue.cpp", "0", "-std=c++14"}));
+      InstrumentedProgramTestData{"real_world/filesystem.c", "0", ""},
+      InstrumentedProgramTestData{"real_world/dining_philosophers.c", "0", ""},
+      InstrumentedProgramTestData{"real_world/dining_philosophers.cpp", "0", "-std=c++14"},
+      InstrumentedProgramTestData{"real_world/work_stealing_queue.cpp", "0", "-std=c++14"}));
 
 //--------------------------------------------------------------------------------------------------
 
