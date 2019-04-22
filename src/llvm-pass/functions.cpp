@@ -31,9 +31,7 @@ void Functions::initialize(llvm::Module& module)
    };
 
    using namespace llvm;
-   AttributeSet attributes;
-   attributes = attributes.addAttribute(module.getContext(), AttributeSet::FunctionIndex,
-                                        Attribute::NoUnwind);
+   AttributeList attributes;
 
    IRBuilder<> builder(module.getContext());
    Type* void_type = Type::getVoidTy(module.getContext());
@@ -126,7 +124,7 @@ void Functions::initialize(llvm::Module& module)
 //-----------------------------------------------------------------------------------------------
 
 void Functions::add_wrapper_prototype(llvm::Module& module, const std::string& name,
-                                      llvm::FunctionType* type, llvm::AttributeSet& attributes)
+                                      llvm::FunctionType* type, llvm::AttributeList& attributes)
 {
    using namespace llvm;
    Function* function = cast<Function>(module.getOrInsertFunction(name, type, attributes));

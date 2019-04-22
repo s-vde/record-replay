@@ -16,7 +16,7 @@ git clone --recursive https://github.com/s-vde/record-replay.git
 
 #### Build LLVM
 The Instrumentation Pass needs to be built against the LLVM Pass Framework.
-It is currently tested with LLVM and Clang version 4.0.
+It is currently tested with LLVM and Clang version 6.0.
 Scripts for downloading/cloning and building the LLVM Suite, the Clang frontend
 and required tools with the right configuration can be found in the repository
 [llvm-pass-development-scripts](https://github.com/s-vde/llvm-pass-development-scripts).

@@ -1,8 +1,11 @@
 #pragma once
 
+#include <llvm/IR/Attributes.h>
+
 #include <set>
 #include <string>
 #include <unordered_map>
+
 
 //--------------------------------------------------------------------------------------------------
 /// @file functions.hpp
@@ -51,7 +54,7 @@ public:
 
 private:
    void add_wrapper_prototype(llvm::Module& module, const std::string& name,
-                              llvm::FunctionType* type, llvm::AttributeSet& attributes);
+                              llvm::FunctionType* type, llvm::AttributeList& attributes);
    void register_c_function(const llvm::Module& module, const std::string& name);
 
    type_map_t m_types;
